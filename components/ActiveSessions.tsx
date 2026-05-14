@@ -53,9 +53,12 @@ export default function ActiveSessions() {
   return (
     <div className="border border-gray-200 rounded-lg overflow-hidden">
       {/* 헤더 - 날짜/시간 실시간 표시 */}
-      <div className="px-5 py-3 border-b border-gray-200 flex items-center justify-between">
-        <span className="text-sm font-semibold text-black">현재 상태</span>
-        <span className="text-sm text-gray-500 tabular-nums">
+      <div className="px-5 py-4 border-b border-gray-200 flex flex-col items-center gap-0.5 text-center">
+        <div className="flex items-center gap-2">
+          <span className="text-base font-bold text-black">현재 상태</span>
+          <span className="text-xs font-semibold tracking-widest text-gray-400 uppercase">Live Status</span>
+        </div>
+        <span className="text-xs text-gray-400 tabular-nums">
           {format(now, 'yyyy년 M월 d일 (EEE) HH:mm:ss', { locale: ko })}
         </span>
       </div>

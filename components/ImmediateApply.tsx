@@ -65,8 +65,9 @@ export default function ImmediateApply() {
   return (
     <>
       <div className="border border-gray-200 rounded-lg overflow-hidden">
-        <div className="px-5 py-3 border-b border-gray-200">
-          <span className="text-sm font-semibold text-black">바로 사용 신청</span>
+        <div className="px-5 py-4 border-b border-gray-200 text-center">
+          <p className="text-base font-bold text-black">바로 사용 신청</p>
+          <p className="text-xs font-semibold tracking-widest text-gray-400 uppercase mt-0.5">Start Now</p>
         </div>
 
         <form onSubmit={handleApply} className="px-5 py-4 space-y-3">
