@@ -9,6 +9,14 @@ export type Program = {
   created_at: string
 }
 
+export type ProgramRequest = {
+  id: string
+  program_name: string
+  content: string
+  is_read: boolean
+  created_at: string
+}
+
 export type SessionStatus = 'active' | 'reserved' | 'completed' | 'cancelled'
 
 export type Session = {

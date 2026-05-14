@@ -1,4 +1,5 @@
 import ActiveSessions from '@/components/ActiveSessions'
+import NotificationBell from '@/components/NotificationBell'
 import { AnimatedText } from '@/components/ui/animated-text'
 import Link from 'next/link'
 
@@ -13,9 +14,12 @@ export default function Home() {
             </div>
             <h1 className="text-sm font-bold text-black">공용 AI 사용 신청</h1>
           </div>
-          <Link href="/admin" className="text-sm text-gray-400 hover:text-black transition-colors">
-            관리자
-          </Link>
+          <div className="flex items-center gap-1">
+            <NotificationBell />
+            <Link href="/admin" className="text-sm text-gray-400 hover:text-black transition-colors px-2 py-2">
+              관리자
+            </Link>
+          </div>
         </div>
       </header>
 
@@ -29,7 +33,7 @@ export default function Home() {
           }}
         >
           <AnimatedText
-            text="카드를 선택해주세요."
+            text="원하는 AI 카드를 눌러주세요."
             duration={0.04}
             delay={0.06}
             textClassName="text-base text-gray-800"

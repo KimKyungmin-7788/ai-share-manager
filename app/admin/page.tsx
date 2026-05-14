@@ -5,8 +5,9 @@ import { supabase } from '@/lib/supabase'
 import { Program, Session } from '@/lib/types'
 import { formatDateTime } from '@/lib/utils'
 import Link from 'next/link'
-import { Pencil, Trash2, ArrowLeft, Eye, EyeOff, Check, X } from 'lucide-react'
+import { Pencil, Trash2, ArrowLeft, Eye, EyeOff, Check, X, Bell } from 'lucide-react'
 import ProgramIcon from '@/components/ProgramIcon'
+import { ProgramRequest } from '@/lib/types'
 
 const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'admin1234'
 
@@ -32,7 +33,9 @@ export default function AdminPage() {
   const [newAccountId, setNewAccountId] = useState('')
   const [newAccountPw, setNewAccountPw] = useState('')
   const [creating, setCreating] = useState(false)
-  const [activeTab, setActiveTab] = useState<'programs' | 'history'>('programs')
+  const [activeTab, setActiveTab] = useState<'programs' | 'history' | 'notifications'>('programs')
+  const [requests, setRequests] = useState<ProgramRequest[]>([])
+  const [unreadCount, setUnreadCount] = useState(0)
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editState, setEditState] = useState<EditState>({ name: '', description: '', website_url: '', account_id: '', account_pw: '' })
   const [saving, setSaving] = useState(false)
@@ -44,12 +47,25 @@ export default function AdminPage() {
   }
 
   async function fetchData() {
-    const [{ data: progs }, { data: sess }] = await Promise.all([
+    const [{ data: progs }, { data: sess }, { data: reqs }] = await Promise.all([
       supabase.from('programs').select('*').order('created_at', { ascending: false }),
       supabase.from('sessions').select('*, programs(name)').order('created_at', { ascending: false }).limit(50),
+      supabase.from('program_requests').select('*').order('created_at', { ascending: false }),
     ])
     setPrograms(progs || [])
     setSessions(sess || [])
+    setRequests(reqs || [])
+    setUnreadCount((reqs || []).filter(r => !r.is_read).length)
+  }
+
+  async function markAllRead() {
+    await supabase.from('program_requests').update({ is_read: true }).eq('is_read', false)
+    fetchData()
+  }
+
+  async function deleteRequest(id: string) {
+    await supabase.from('program_requests').delete().eq('id', id)
+    fetchData()
   }
 
   useEffect(() => { if (authenticated) fetchData() }, [authenticated])
@@ -160,13 +176,21 @@ export default function AdminPage() {
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 space-y-5">
         {/* 탭 */}
         <div className="flex gap-1 border-b border-gray-200">
-          {(['programs', 'history'] as const).map((tab) => (
+          {(['programs', 'history', 'notifications'] as const).map((tab) => (
             <button
               key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === tab ? 'border-black text-black' : 'border-transparent text-gray-400 hover:text-gray-700'}`}
+              onClick={() => { setActiveTab(tab); if (tab === 'notifications') markAllRead() }}
+              className={`relative px-4 py-2 text-sm font-medium border-b-2 transition-colors ${activeTab === tab ? 'border-black text-black' : 'border-transparent text-gray-400 hover:text-gray-700'}`}
             >
-              {tab === 'programs' ? '프로그램 관리' : '사용 내역'}
+              {tab === 'programs' ? '프로그램 관리' : tab === 'history' ? '사용 내역' : (
+                <span className="flex items-center gap-1.5">
+                  <Bell className="w-3.5 h-3.5" />
+                  알림
+                  {unreadCount > 0 && (
+                    <span className="w-2 h-2 bg-red-500 rounded-full" />
+                  )}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -256,6 +280,32 @@ export default function AdminPage() {
               </div>
             </div>
           </>
+        )}
+
+        {activeTab === 'notifications' && (
+          <div className="border border-gray-200 rounded-lg overflow-hidden">
+            <div className="px-5 py-3 border-b border-gray-200 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-black">AI 프로그램 신청 알림 ({requests.length}건)</h2>
+            </div>
+            <div className="divide-y divide-gray-100">
+              {requests.length === 0 ? (
+                <p className="px-5 py-8 text-gray-400 text-sm text-center">신청 내역이 없습니다</p>
+              ) : requests.map(r => (
+                <div key={r.id} className={`px-5 py-4 flex items-start gap-3 ${r.is_read ? 'bg-white' : 'bg-blue-50'}`}>
+                  {!r.is_read && <span className="w-2 h-2 bg-red-500 rounded-full shrink-0 mt-1.5" />}
+                  {r.is_read && <span className="w-2 h-2 shrink-0 mt-1.5" />}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-black">{r.program_name}</p>
+                    <p className="text-sm text-gray-600 mt-0.5">{r.content}</p>
+                    <p className="text-xs text-gray-400 mt-1">{new Date(r.created_at).toLocaleString('ko-KR')}</p>
+                  </div>
+                  <button onClick={() => deleteRequest(r.id)} className="p-1.5 text-gray-300 hover:text-red-500 rounded transition-colors shrink-0">
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
         )}
 
         {activeTab === 'history' && (
