@@ -23,15 +23,9 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 py-5 space-y-4">
+      <main className="max-w-lg mx-auto px-4 pt-4 pb-5 space-y-3">
         {/* 히어로 */}
-        <div
-          className="rounded-2xl px-6 py-6 border border-gray-100"
-          style={{
-            background: 'linear-gradient(135deg, #ffffff 0%, #f5f5f5 50%, #ebebeb 100%)',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06)',
-          }}
-        >
+        <div className="px-1">
           <AnimatedText
             text="원하는 AI 카드를 눌러주세요."
             duration={0.04}
