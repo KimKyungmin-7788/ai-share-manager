@@ -175,14 +175,19 @@ export default function ActiveSessions() {
             {/* Coming Soon 카드 — 프로그램 카드와 동일한 구조/크기 */}
             <button
               onClick={() => setShowRequestModal(true)}
-              className="rounded-2xl border-2 border-dashed border-gray-200 hover:border-gray-400 bg-white active:scale-[0.98] transition-all px-4 py-5 flex flex-col gap-3 items-center justify-center w-full"
+              className="rounded-2xl border-2 border-dashed border-gray-200 hover:border-gray-400 bg-white active:scale-[0.98] transition-all px-4 py-5 flex flex-col gap-3 text-left w-full"
             >
-              <div className="w-8 h-8 rounded-xl bg-gray-50 border border-dashed border-gray-300 flex items-center justify-center">
-                <Plus className="w-4 h-4 text-gray-400" />
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-gray-50 border border-dashed border-gray-300 flex items-center justify-center shrink-0">
+                  <Plus className="w-4 h-4 text-gray-400" />
+                </div>
+                <div className="min-w-0 flex-1 flex flex-col gap-1">
+                  <span className="text-sm font-bold text-gray-300 leading-tight uppercase tracking-wide">Coming</span>
+                  <span className="text-sm font-bold text-gray-300 leading-tight uppercase tracking-wide">Soon</span>
+                </div>
               </div>
-              <div className="flex flex-col items-center gap-0.5">
-                <p className="text-xs font-bold text-gray-300 uppercase tracking-widest">Coming Soon</p>
-                <p className="text-xs font-semibold text-gray-500 underline underline-offset-2">AI 신청하기</p>
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs font-semibold text-gray-400 underline underline-offset-2">AI 신청하기</span>
               </div>
             </button>
           </div>

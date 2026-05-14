@@ -23,9 +23,9 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 pt-6 pb-10 space-y-5">
+      <main className="max-w-lg mx-auto px-4 pt-3 pb-10 space-y-4">
         {/* 히어로 */}
-        <div className="px-1 py-2">
+        <div className="px-1">
           <AnimatedText
             text="원하는 AI 카드를 눌러주세요."
             duration={0.04}
