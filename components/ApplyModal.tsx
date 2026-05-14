@@ -4,7 +4,6 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Program, Session } from '@/lib/types'
 import { addHours, format, isBefore } from 'date-fns'
-import { ko } from 'date-fns/locale'
 import { X, Zap, CalendarClock, Check } from 'lucide-react'
 import AccountPopup from './AccountPopup'
 
@@ -26,6 +25,7 @@ export default function ApplyModal({ program, activeSession, onClose }: Props) {
   const [error, setError] = useState('')
   const [reservedSessions, setReservedSessions] = useState<Session[]>([])
   const [popup, setPopup] = useState<{ accountId: string; accountPw: string; programName: string } | null>(null)
+  const [isClosing, setIsClosing] = useState(false)
 
   const today = format(new Date(), 'yyyy-MM-dd')
   const currentHour = new Date().getHours()
@@ -46,6 +46,11 @@ export default function ApplyModal({ program, activeSession, onClose }: Props) {
     }
     fetchReservations()
   }, [program.id])
+
+  function close() {
+    setIsClosing(true)
+    setTimeout(() => onClose(), 250)
+  }
 
   function getSlotCount(date: string, hour: number) {
     return reservedSessions.filter(s => {
@@ -71,7 +76,7 @@ export default function ApplyModal({ program, activeSession, onClose }: Props) {
     if (program.account_id && program.account_pw) {
       setPopup({ accountId: program.account_id, accountPw: program.account_pw, programName: program.name })
     } else {
-      onClose()
+      close()
     }
   }
 
@@ -113,24 +118,27 @@ export default function ApplyModal({ program, activeSession, onClose }: Props) {
         accountId={popup.accountId}
         accountPw={popup.accountPw}
         programName={popup.programName}
-        onClose={onClose}
+        onClose={close}
       />
     )
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-end justify-center z-50" onClick={onClose}>
+    <div
+      className={`fixed inset-0 bg-black/50 flex items-end justify-center z-50 ${isClosing ? 'modal-backdrop-out' : 'modal-backdrop-in'}`}
+      onClick={close}
+    >
       <div
-        className="bg-white rounded-t-3xl w-full max-w-lg"
+        className={`bg-white rounded-t-3xl w-full max-w-lg max-h-[90vh] flex flex-col ${isClosing ? 'modal-sheet-out' : 'modal-sheet-in'}`}
         onClick={e => e.stopPropagation()}
       >
         {/* 드래그 핸들 */}
-        <div className="flex justify-center pt-3 pb-1">
+        <div className="flex justify-center pt-3 pb-1 shrink-0">
           <div className="w-10 h-1 bg-gray-200 rounded-full" />
         </div>
 
         {/* 헤더 */}
-        <div className="px-5 py-3 flex items-start justify-between">
+        <div className="px-5 py-3 flex items-start justify-between shrink-0">
           <div>
             <p className="text-lg font-bold text-black">{program.name}</p>
             {step === 'choose' && (
@@ -139,31 +147,26 @@ export default function ApplyModal({ program, activeSession, onClose }: Props) {
             {step === 'immediate' && (
               <p className="text-sm text-gray-500 mt-0.5">지금 바로 사용 신청</p>
             )}
-            {step === 'reservation' && activeSession && (
-              <p className="text-sm text-gray-500 mt-0.5">
-                {activeSession.user_name}님 사용 중 · {format(new Date(activeSession.end_time), 'HH:mm')} 종료
-              </p>
-            )}
-            {step === 'reservation' && !activeSession && (
+            {step === 'reservation' && (
               <p className="text-sm text-gray-500 mt-0.5">예약 신청</p>
             )}
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors mt-0.5">
+          <button onClick={close} className="p-2 hover:bg-gray-100 rounded-xl transition-colors mt-0.5">
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
 
-        <div className="px-5 pb-10 space-y-4">
-          {/* 사용 중 안내 */}
+        {/* 스크롤 가능한 콘텐츠 영역 */}
+        <div className="px-5 pb-10 space-y-4 overflow-y-auto">
+
+          {/* 사용 중 안내 — 간결하게 */}
           {step === 'reservation' && activeSession && (
-            <div className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3.5">
-              <p className="text-sm font-semibold text-black">
-                현재 <span className="text-black">{activeSession.user_name}</span>님이 사용 중
+            <div className="bg-gray-50 border border-gray-100 rounded-2xl px-4 py-3">
+              <p className="text-sm font-semibold text-gray-800">
+                현재 {activeSession.user_name}선생님 사용 중
+                <span className="font-normal text-gray-500"> (~{format(new Date(activeSession.end_time), 'HH:mm')} 종료)</span>
               </p>
-              <p className="text-sm text-gray-500 mt-0.5">
-                {format(new Date(activeSession.end_time), 'HH:mm', { locale: ko })} 종료 예정입니다.
-                종료 후 시간으로 예약해주세요.
-              </p>
+              <p className="text-sm text-gray-500 mt-0.5">이후 시간으로 예약해주세요.</p>
             </div>
           )}
 
@@ -327,7 +330,7 @@ export default function ApplyModal({ program, activeSession, onClose }: Props) {
                 <p className="text-sm text-gray-500 mt-1">{program.name} 예약이 접수되었습니다.</p>
               </div>
               <button
-                onClick={onClose}
+                onClick={close}
                 className="w-full py-4 bg-black hover:bg-gray-800 text-white text-base font-bold rounded-2xl transition-colors"
               >
                 확인

@@ -15,12 +15,15 @@ export default function Home() {
 
       <main className="max-w-lg mx-auto px-4 py-5 space-y-4">
         {/* 히어로 */}
-        <div className="bg-black rounded-2xl px-6 py-7 text-white">
-          <p className="text-xl font-bold leading-snug">
-            공용 AI 툴을<br />지금 바로 신청하세요.
-          </p>
-          <p className="text-sm text-gray-400 mt-2">
-            카드를 눌러 바로 사용하거나 예약할 수 있습니다.
+        <div
+          className="rounded-2xl px-6 py-6 border border-gray-100"
+          style={{
+            background: 'linear-gradient(135deg, #ffffff 0%, #f5f5f5 50%, #ebebeb 100%)',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.06)',
+          }}
+        >
+          <p className="text-base font-semibold text-gray-800 leading-snug">
+            프로그램 카드를 눌러<br />바로 사용하거나 예약할 수 있습니다.
           </p>
         </div>
 
