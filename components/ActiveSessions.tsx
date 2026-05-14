@@ -9,6 +9,7 @@ import ProgramIcon from './ProgramIcon'
 import ApplyModal from './ApplyModal'
 import RequestProgramModal from './RequestProgramModal'
 import { Plus } from 'lucide-react'
+import { AnimatePresence } from 'framer-motion'
 
 // 키워드마다 고정 색상 (동일 키워드 = 동일 색상) — 인라인 스타일로 purge 방지
 const BADGE_PALETTE = [
@@ -188,17 +189,22 @@ export default function ActiveSessions() {
         )}
       </div>
 
-      {selectedProgram && (
-        <ApplyModal
-          program={selectedProgram}
-          activeSession={selectedActiveSession}
-          onClose={() => { setSelectedProgram(null); fetchData() }}
-        />
-      )}
+      <AnimatePresence>
+        {selectedProgram && (
+          <ApplyModal
+            key="apply-modal"
+            program={selectedProgram}
+            activeSession={selectedActiveSession}
+            onClose={() => { setSelectedProgram(null); fetchData() }}
+          />
+        )}
+      </AnimatePresence>
 
-      {showRequestModal && (
-        <RequestProgramModal onClose={() => setShowRequestModal(false)} />
-      )}
+      <AnimatePresence>
+        {showRequestModal && (
+          <RequestProgramModal key="request-modal" onClose={() => setShowRequestModal(false)} />
+        )}
+      </AnimatePresence>
     </>
   )
 }

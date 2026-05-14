@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { X, Check } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 type Props = {
   onClose: () => void
@@ -13,12 +14,6 @@ export default function RequestProgramModal({ onClose }: Props) {
   const [content, setContent] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [done, setDone] = useState(false)
-  const [isClosing, setIsClosing] = useState(false)
-
-  function close() {
-    setIsClosing(true)
-    setTimeout(() => onClose(), 250)
-  }
 
   async function handleSubmit() {
     if (!programName.trim() || !content.trim()) return
@@ -32,29 +27,33 @@ export default function RequestProgramModal({ onClose }: Props) {
   }
 
   return (
-    <div
-      className={`fixed inset-0 bg-black/50 flex items-end justify-center z-50 ${isClosing ? 'modal-backdrop-out' : 'modal-backdrop-in'}`}
-      onClick={close}
+    <motion.div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.18 }}
+      onClick={onClose}
     >
-      <div
-        className={`bg-white rounded-t-3xl w-full max-w-lg ${isClosing ? 'modal-sheet-out' : 'modal-sheet-in'}`}
+      <motion.div
+        className="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden"
+        initial={{ scale: 0.7, opacity: 0, y: 16 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.7, opacity: 0, y: 16 }}
+        transition={{ type: 'spring', damping: 22, stiffness: 380, mass: 0.8 }}
         onClick={e => e.stopPropagation()}
       >
-        <div className="flex justify-center pt-3 pb-1">
-          <div className="w-10 h-1 bg-gray-200 rounded-full" />
-        </div>
-
-        <div className="px-5 py-3 flex items-start justify-between">
+        <div className="px-5 pt-5 pb-3 flex items-start justify-between">
           <div>
             <p className="text-lg font-bold text-black">AI 프로그램 신청</p>
             <p className="text-sm text-gray-500 mt-0.5">원하는 AI 프로그램을 신청해주세요</p>
           </div>
-          <button onClick={close} className="p-2 hover:bg-gray-100 rounded-xl transition-colors mt-0.5">
+          <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-xl transition-colors mt-0.5">
             <X className="w-5 h-5 text-gray-500" />
           </button>
         </div>
 
-        <div className="px-5 pb-10 space-y-4">
+        <div className="px-5 pb-8 space-y-4">
           {!done ? (
             <>
               <div>
@@ -97,7 +96,7 @@ export default function RequestProgramModal({ onClose }: Props) {
                 <p className="text-sm text-gray-500 mt-1">관리자에게 알림이 전달되었습니다.</p>
               </div>
               <button
-                onClick={close}
+                onClick={onClose}
                 className="w-full py-4 bg-black hover:bg-gray-800 text-white text-base font-bold rounded-2xl transition-colors"
               >
                 확인
@@ -105,7 +104,7 @@ export default function RequestProgramModal({ onClose }: Props) {
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 }

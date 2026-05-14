@@ -6,6 +6,7 @@ import { Program, Session } from '@/lib/types'
 import { addHours, format, isBefore } from 'date-fns'
 import { X, Zap, CalendarClock, Check } from 'lucide-react'
 import AccountPopup from './AccountPopup'
+import { motion } from 'framer-motion'
 import { Calendar } from './ui/calendar-rac'
 import { today as todayDate, getLocalTimeZone } from '@internationalized/date'
 import type { DateValue } from 'react-aria-components'
@@ -29,7 +30,6 @@ export default function ApplyModal({ program, activeSession, onClose }: Props) {
   const [error, setError] = useState('')
   const [reservedSessions, setReservedSessions] = useState<Session[]>([])
   const [popup, setPopup] = useState<{ accountId: string; accountPw: string; programName: string; websiteUrl?: string | null; isReservation?: boolean } | null>(null)
-  const [isClosing, setIsClosing] = useState(false)
 
   const today = format(new Date(), 'yyyy-MM-dd')
   const currentHour = new Date().getHours()
@@ -51,10 +51,7 @@ export default function ApplyModal({ program, activeSession, onClose }: Props) {
     fetchReservations()
   }, [program.id])
 
-  function close() {
-    setIsClosing(true)
-    setTimeout(() => onClose(), 250)
-  }
+  const close = onClose
 
   function getSlotCount(date: string, hour: number) {
     return reservedSessions.filter(s => {
@@ -134,21 +131,24 @@ export default function ApplyModal({ program, activeSession, onClose }: Props) {
   }
 
   return (
-    <div
-      className={`fixed inset-0 bg-black/50 flex items-end justify-center z-50 ${isClosing ? 'modal-backdrop-out' : 'modal-backdrop-in'}`}
+    <motion.div
+      className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 px-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.18 }}
       onClick={close}
     >
-      <div
-        className={`bg-white rounded-t-3xl w-full max-w-lg max-h-[90vh] flex flex-col ${isClosing ? 'modal-sheet-out' : 'modal-sheet-in'}`}
+      <motion.div
+        className="bg-white rounded-3xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col overflow-hidden"
+        initial={{ scale: 0.7, opacity: 0, y: 16 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.7, opacity: 0, y: 16 }}
+        transition={{ type: 'spring', damping: 22, stiffness: 380, mass: 0.8 }}
         onClick={e => e.stopPropagation()}
       >
-        {/* 드래그 핸들 */}
-        <div className="flex justify-center pt-3 pb-1 shrink-0">
-          <div className="w-10 h-1 bg-gray-200 rounded-full" />
-        </div>
-
         {/* 헤더 */}
-        <div className="px-5 py-3 flex items-start justify-between shrink-0">
+        <div className="px-5 pt-5 pb-3 flex items-start justify-between shrink-0">
           <div>
             <p className="text-lg font-bold text-black">{program.name}</p>
             {step === 'choose' && (
@@ -352,7 +352,7 @@ export default function ApplyModal({ program, activeSession, onClose }: Props) {
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </motion.div>
+    </motion.div>
   )
 }
