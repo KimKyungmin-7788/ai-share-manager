@@ -3,6 +3,9 @@ export type Program = {
   name: string
   description: string | null
   is_active: boolean
+  website_url: string | null
+  account_id: string | null
+  account_pw: string | null
   created_at: string
 }
 

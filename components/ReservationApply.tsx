@@ -3,37 +3,30 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Program, Session } from '@/lib/types'
-import { getNextHourSlots } from '@/lib/utils'
-import { format } from 'date-fns'
+import { format, addHours, startOfDay, isBefore } from 'date-fns'
+import { ko } from 'date-fns/locale'
 import { CalendarClock, Users } from 'lucide-react'
-
-type SlotInfo = {
-  start: Date
-  end: Date
-  label: string
-  count: number
-}
 
 export default function ReservationApply() {
   const [programs, setPrograms] = useState<Program[]>([])
   const [sessions, setSessions] = useState<Session[]>([])
   const [selectedProgram, setSelectedProgram] = useState('')
-  const [selectedSlot, setSelectedSlot] = useState<SlotInfo | null>(null)
+  const [selectedDate, setSelectedDate] = useState('')
+  const [startHour, setStartHour] = useState('')
+  const [hours, setHours] = useState('1')
   const [userName, setUserName] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null)
 
   async function fetchData() {
     const now = new Date().toISOString()
-    const later = new Date(Date.now() + 13 * 60 * 60 * 1000).toISOString()
     const [{ data: progs }, { data: sess }] = await Promise.all([
       supabase.from('programs').select('*').eq('is_active', true).order('name'),
       supabase
         .from('sessions')
         .select('*')
         .in('status', ['reserved', 'active'])
-        .gte('start_time', now)
-        .lte('start_time', later),
+        .gte('start_time', now),
     ])
     setPrograms(progs || [])
     setSessions(sess || [])
@@ -41,41 +34,61 @@ export default function ReservationApply() {
 
   useEffect(() => {
     fetchData()
+    const today = format(new Date(), 'yyyy-MM-dd')
+    setSelectedDate(today)
     const channel = supabase
-      .channel('reservation-apply')
+      .channel('reservation-v2')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'programs' }, fetchData)
       .subscribe()
     return () => { supabase.removeChannel(channel) }
   }, [])
 
-  function getSlotCount(slot: { start: Date; end: Date }, programId: string) {
-    return sessions.filter(
-      (s) =>
+  function getSlotCount(date: string, hour: number, programId: string) {
+    if (!programId) return 0
+    return sessions.filter((s) => {
+      const st = new Date(s.start_time)
+      return (
         s.program_id === programId &&
-        new Date(s.start_time).getTime() === slot.start.getTime()
-    ).length
+        format(st, 'yyyy-MM-dd') === date &&
+        st.getHours() === hour
+      )
+    }).length
   }
 
-  const slots = getNextHourSlots(12)
-  const slotsWithCount: SlotInfo[] = selectedProgram
-    ? slots.map((s) => ({
-        ...s,
-        count: getSlotCount(s, selectedProgram),
-      }))
-    : slots.map((s) => ({ ...s, count: 0 }))
+  // 시작 시간 옵션: 선택한 날짜가 오늘이면 현재 시각 이후만, 아니면 0~23
+  const today = format(new Date(), 'yyyy-MM-dd')
+  const currentHour = new Date().getHours()
+  const hourOptions = Array.from({ length: 24 }, (_, i) => i).filter((h) => {
+    if (selectedDate === today) return h > currentHour
+    return true
+  })
+
+  const durationOptions = Array.from({ length: 8 }, (_, i) => i + 1)
+
+  // 최소 날짜 = 오늘
+  const minDate = format(new Date(), 'yyyy-MM-dd')
 
   async function handleApply(e: React.FormEvent) {
     e.preventDefault()
-    if (!userName.trim() || !selectedProgram || !selectedSlot) return
+    if (!userName.trim() || !selectedProgram || !selectedDate || startHour === '') return
+
+    const startTime = new Date(`${selectedDate}T${String(startHour).padStart(2, '0')}:00:00`)
+    const endTime = addHours(startTime, Number(hours))
+
+    if (isBefore(startTime, new Date())) {
+      setMessage({ type: 'error', text: '과거 시간은 예약할 수 없습니다.' })
+      return
+    }
 
     const duplicate = sessions.some(
       (s) =>
         s.program_id === selectedProgram &&
         s.user_name === userName.trim() &&
-        new Date(s.start_time).getTime() === selectedSlot.start.getTime()
+        new Date(s.start_time).getTime() === startTime.getTime()
     )
     if (duplicate) {
-      setMessage({ type: 'error', text: '이미 해당 시간에 신청하셨습니다.' })
+      setMessage({ type: 'error', text: '이미 해당 시간에 예약하셨습니다.' })
       return
     }
 
@@ -83,8 +96,8 @@ export default function ReservationApply() {
     const { error } = await supabase.from('sessions').insert({
       program_id: selectedProgram,
       user_name: userName.trim(),
-      start_time: selectedSlot.start.toISOString(),
-      end_time: selectedSlot.end.toISOString(),
+      start_time: startTime.toISOString(),
+      end_time: endTime.toISOString(),
       status: 'reserved',
     })
 
@@ -92,12 +105,14 @@ export default function ReservationApply() {
     if (error) {
       setMessage({ type: 'error', text: '신청 중 오류가 발생했습니다.' })
     } else {
-      setMessage({ type: 'success', text: `${selectedSlot.label} 예약 완료!` })
+      const label = `${format(startTime, 'M/d(EEE) HH:mm', { locale: ko })} ~ ${format(endTime, 'HH:mm')} ${Number(hours)}시간`
+      setMessage({ type: 'success', text: `예약 완료! ${label}` })
       setUserName('')
-      setSelectedSlot(null)
+      setStartHour('')
+      setHours('1')
       fetchData()
     }
-    setTimeout(() => setMessage(null), 4000)
+    setTimeout(() => setMessage(null), 5000)
   }
 
   return (
@@ -107,101 +122,112 @@ export default function ReservationApply() {
         <h2 className="text-lg font-semibold text-gray-800">예약 신청</h2>
       </div>
 
-      <div className="px-6 py-5 space-y-4">
-        {programs.length === 0 ? (
-          <p className="text-gray-400 text-sm text-center py-4">등록된 프로그램이 없습니다</p>
-        ) : (
-          <>
-            {/* 프로그램 선택 */}
-            <div>
-              <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                프로그램 선택
-              </label>
-              <div className="grid gap-2">
-                {programs.map((p) => (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedProgram(selectedProgram === p.id ? '' : p.id)
-                      setSelectedSlot(null)
-                    }}
-                    className={`w-full px-4 py-2.5 rounded-xl border-2 text-left text-sm font-medium transition-all ${
-                      selectedProgram === p.id
-                        ? 'border-purple-500 bg-purple-50 text-purple-700'
-                        : 'border-gray-200 hover:border-purple-300 text-gray-700'
-                    }`}
-                  >
-                    {p.name}
-                  </button>
-                ))}
-              </div>
-            </div>
+      <form onSubmit={handleApply} className="px-6 py-5 space-y-3">
+        {/* 프로그램 */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 mb-1.5">프로그램</label>
+          <div className="relative">
+            <select
+              value={selectedProgram}
+              onChange={(e) => { setSelectedProgram(e.target.value); setStartHour('') }}
+              className="w-full appearance-none px-4 py-2.5 pr-10 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+            >
+              <option value="">프로그램 선택</option>
+              {programs.map((p) => (
+                <option key={p.id} value={p.id}>{p.name}</option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">▾</div>
+          </div>
+        </div>
 
-            {/* 시간 슬롯 선택 */}
-            {selectedProgram && (
-              <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
-                  시간대 선택
-                </label>
-                <div className="max-h-52 overflow-y-auto space-y-1.5 pr-1">
-                  {slotsWithCount.map((slot) => (
-                    <button
-                      key={slot.start.toISOString()}
-                      type="button"
-                      onClick={() => setSelectedSlot(selectedSlot?.start.getTime() === slot.start.getTime() ? null : slot)}
-                      className={`w-full flex items-center justify-between px-4 py-2.5 rounded-xl border-2 text-sm transition-all ${
-                        selectedSlot?.start.getTime() === slot.start.getTime()
-                          ? 'border-purple-500 bg-purple-50'
-                          : 'border-gray-100 hover:border-purple-200 hover:bg-purple-50/40'
-                      }`}
-                    >
-                      <span className="text-gray-700 font-medium">{slot.label}</span>
-                      <span className={`flex items-center gap-1 text-xs font-semibold shrink-0 ${
-                        slot.count === 0 ? 'text-green-500' : 'text-orange-500'
-                      }`}>
-                        <Users className="w-3 h-3" />
-                        {slot.count === 0 ? '여유' : `${slot.count}명 대기`}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
+        {/* 날짜 */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 mb-1.5">날짜</label>
+          <input
+            type="date"
+            value={selectedDate}
+            min={minDate}
+            onChange={(e) => { setSelectedDate(e.target.value); setStartHour('') }}
+            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+          />
+        </div>
 
-            {/* 이름 입력 및 신청 */}
-            <form onSubmit={handleApply} className="space-y-3">
-              <input
-                type="text"
-                placeholder="이름 입력"
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
-                className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
-                maxLength={20}
-              />
-              <button
-                type="submit"
-                disabled={submitting || !userName.trim() || !selectedProgram || !selectedSlot}
-                className="w-full py-2.5 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-semibold rounded-xl transition-colors"
-              >
-                {submitting ? '신청 중...' : '예약 신청하기'}
-              </button>
-            </form>
-
-            {message && (
-              <div
-                className={`px-4 py-3 rounded-xl text-sm font-medium ${
-                  message.type === 'success'
-                    ? 'bg-green-50 text-green-700'
-                    : 'bg-red-50 text-red-700'
-                }`}
-              >
-                {message.text}
+        {/* 시작 시간 */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 mb-1.5">시작 시간</label>
+          <div className="relative">
+            <select
+              value={startHour}
+              onChange={(e) => setStartHour(e.target.value)}
+              className="w-full appearance-none px-4 py-2.5 pr-10 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+            >
+              <option value="">시간 선택</option>
+              {hourOptions.map((h) => {
+                const count = getSlotCount(selectedDate, h, selectedProgram)
+                return (
+                  <option key={h} value={h}>
+                    {String(h).padStart(2, '0')}:00{count > 0 ? ` (${count}명 예약)` : ''}
+                  </option>
+                )
+              })}
+            </select>
+            <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">▾</div>
+          </div>
+          {selectedProgram && startHour !== '' && (() => {
+            const count = getSlotCount(selectedDate, Number(startHour), selectedProgram)
+            return count > 0 ? (
+              <div className="mt-1.5 flex items-center gap-1 text-xs text-orange-500">
+                <Users className="w-3 h-3" /> {count}명 이미 예약됨
               </div>
-            )}
-          </>
+            ) : null
+          })()}
+        </div>
+
+        {/* 이용 시간 */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 mb-1.5">이용 시간</label>
+          <div className="relative">
+            <select
+              value={hours}
+              onChange={(e) => setHours(e.target.value)}
+              className="w-full appearance-none px-4 py-2.5 pr-10 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+            >
+              {durationOptions.map((h) => (
+                <option key={h} value={h}>{h}시간</option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">▾</div>
+          </div>
+        </div>
+
+        {/* 이름 */}
+        <div>
+          <label className="block text-xs font-semibold text-gray-500 mb-1.5">이름</label>
+          <input
+            type="text"
+            placeholder="이름 입력"
+            value={userName}
+            onChange={(e) => setUserName(e.target.value)}
+            className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400 focus:border-transparent"
+            maxLength={20}
+          />
+        </div>
+
+        {message && (
+          <div className={`px-4 py-3 rounded-xl text-sm font-medium ${message.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
+            {message.text}
+          </div>
         )}
-      </div>
+
+        <button
+          type="submit"
+          disabled={submitting || !userName.trim() || !selectedProgram || !selectedDate || startHour === ''}
+          className="w-full py-2.5 bg-purple-500 hover:bg-purple-600 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-bold rounded-xl transition-colors"
+        >
+          {submitting ? '신청 중...' : '예약 신청하기'}
+        </button>
+      </form>
     </div>
   )
 }

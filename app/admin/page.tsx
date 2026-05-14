@@ -6,6 +6,7 @@ import { Program, Session } from '@/lib/types'
 import { formatDateTime } from '@/lib/utils'
 import Link from 'next/link'
 import { Bot, Plus, Trash2, ArrowLeft, Lock, Eye, EyeOff, Users, Calendar } from 'lucide-react'
+import ProgramIcon from '@/components/ProgramIcon'
 
 const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'admin1234'
 
@@ -19,6 +20,9 @@ export default function AdminPage() {
   const [sessions, setSessions] = useState<Session[]>([])
   const [newProgramName, setNewProgramName] = useState('')
   const [newProgramDesc, setNewProgramDesc] = useState('')
+  const [newWebsiteUrl, setNewWebsiteUrl] = useState('')
+  const [newAccountId, setNewAccountId] = useState('')
+  const [newAccountPw, setNewAccountPw] = useState('')
   const [creating, setCreating] = useState(false)
   const [activeTab, setActiveTab] = useState<'programs' | 'history'>('programs')
 
@@ -56,9 +60,15 @@ export default function AdminPage() {
     await supabase.from('programs').insert({
       name: newProgramName.trim(),
       description: newProgramDesc.trim() || null,
+      website_url: newWebsiteUrl.trim() || null,
+      account_id: newAccountId.trim() || null,
+      account_pw: newAccountPw.trim() || null,
     })
     setNewProgramName('')
     setNewProgramDesc('')
+    setNewWebsiteUrl('')
+    setNewAccountId('')
+    setNewAccountPw('')
     setCreating(false)
     fetchData()
   }
@@ -182,25 +192,48 @@ export default function AdminPage() {
               <h2 className="text-base font-semibold text-gray-800 mb-4 flex items-center gap-2">
                 <Plus className="w-4 h-4" /> 프로그램 추가
               </h2>
-              <form onSubmit={createProgram} className="flex gap-2 flex-wrap">
-                <input
-                  type="text"
-                  placeholder="프로그램 이름 (예: ChatGPT Plus)"
-                  value={newProgramName}
-                  onChange={(e) => setNewProgramName(e.target.value)}
-                  className="flex-1 min-w-48 px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
-                />
+              <form onSubmit={createProgram} className="space-y-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <input
+                    type="text"
+                    placeholder="프로그램 이름 * (예: ChatGPT Plus)"
+                    value={newProgramName}
+                    onChange={(e) => setNewProgramName(e.target.value)}
+                    className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                  />
+                  <input
+                    type="text"
+                    placeholder="웹사이트 URL (아이콘 자동 표시)"
+                    value={newWebsiteUrl}
+                    onChange={(e) => setNewWebsiteUrl(e.target.value)}
+                    className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                  />
+                  <input
+                    type="text"
+                    placeholder="공유 계정 ID (이메일)"
+                    value={newAccountId}
+                    onChange={(e) => setNewAccountId(e.target.value)}
+                    className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                  />
+                  <input
+                    type="text"
+                    placeholder="공유 계정 PW"
+                    value={newAccountPw}
+                    onChange={(e) => setNewAccountPw(e.target.value)}
+                    className="px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                  />
+                </div>
                 <input
                   type="text"
                   placeholder="설명 (선택)"
                   value={newProgramDesc}
                   onChange={(e) => setNewProgramDesc(e.target.value)}
-                  className="flex-1 min-w-32 px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
+                  className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent"
                 />
                 <button
                   type="submit"
                   disabled={creating || !newProgramName.trim()}
-                  className="px-5 py-2.5 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-semibold rounded-xl transition-colors shrink-0"
+                  className="px-6 py-2.5 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-semibold rounded-xl transition-colors"
                 >
                   추가
                 </button>
@@ -217,10 +250,13 @@ export default function AdminPage() {
                   <p className="px-6 py-8 text-gray-400 text-sm text-center">등록된 프로그램이 없습니다</p>
                 ) : (
                   programs.map((p) => (
-                    <div key={p.id} className="px-6 py-4 flex items-center gap-4">
+                    <div key={p.id} className="px-6 py-4 flex items-center gap-3">
+                      <ProgramIcon websiteUrl={p.website_url} name={p.name} size={32} />
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-gray-800">{p.name}</p>
-                        {p.description && <p className="text-xs text-gray-400 mt-0.5">{p.description}</p>}
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {p.account_id || '계정 미설정'}{p.description ? ` · ${p.description}` : ''}
+                        </p>
                       </div>
                       <button
                         onClick={() => toggleProgram(p)}

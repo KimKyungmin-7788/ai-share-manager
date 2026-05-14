@@ -2,61 +2,50 @@
 
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
-import { Session } from '@/lib/types'
-import { formatTime, isSessionExpired } from '@/lib/utils'
-import { Monitor, Clock, User, CheckCircle } from 'lucide-react'
+import { Program, Session } from '@/lib/types'
+import { formatTime } from '@/lib/utils'
+import ProgramIcon from './ProgramIcon'
+import { Monitor } from 'lucide-react'
 
 export default function ActiveSessions() {
+  const [programs, setPrograms] = useState<Program[]>([])
   const [sessions, setSessions] = useState<Session[]>([])
   const [loading, setLoading] = useState(true)
 
-  async function fetchActiveSessions() {
+  async function fetchData() {
     const now = new Date().toISOString()
-    const { data } = await supabase
-      .from('sessions')
-      .select('*, programs(name)')
-      .eq('status', 'active')
-      .gte('end_time', now)
-      .order('start_time', { ascending: true })
-    setSessions(data || [])
+    const [{ data: progs }, { data: sess }] = await Promise.all([
+      supabase.from('programs').select('*').eq('is_active', true).order('name'),
+      supabase.from('sessions').select('*').eq('status', 'active').gte('end_time', now),
+    ])
+    setPrograms(progs || [])
+    setSessions(sess || [])
     setLoading(false)
   }
 
-  async function markExpiredSessions() {
+  async function expireSessions() {
     const now = new Date().toISOString()
-    await supabase
-      .from('sessions')
-      .update({ status: 'completed' })
-      .eq('status', 'active')
-      .lt('end_time', now)
+    await supabase.from('sessions').update({ status: 'completed' }).eq('status', 'active').lt('end_time', now)
   }
 
   useEffect(() => {
-    fetchActiveSessions()
-    markExpiredSessions()
-
+    fetchData()
+    expireSessions()
     const channel = supabase
-      .channel('sessions-active')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, () => {
-        fetchActiveSessions()
-        markExpiredSessions()
-      })
+      .channel('active-sessions-v2')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, () => { fetchData(); expireSessions() })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'programs' }, fetchData)
       .subscribe()
-
-    const timer = setInterval(() => {
-      fetchActiveSessions()
-      markExpiredSessions()
-    }, 30000)
-
-    return () => {
-      supabase.removeChannel(channel)
-      clearInterval(timer)
-    }
+    const timer = setInterval(() => { fetchData(); expireSessions() }, 30000)
+    return () => { supabase.removeChannel(channel); clearInterval(timer) }
   }, [])
 
+  function getActiveSession(programId: string) {
+    return sessions.find((s) => s.program_id === programId) || null
+  }
+
   function getRemainingMinutes(endTime: string) {
-    const diff = new Date(endTime).getTime() - Date.now()
-    return Math.max(0, Math.floor(diff / 60000))
+    return Math.max(0, Math.floor((new Date(endTime).getTime() - Date.now()) / 60000))
   }
 
   return (
@@ -64,48 +53,43 @@ export default function ActiveSessions() {
       <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
         <Monitor className="w-5 h-5 text-blue-500" />
         <h2 className="text-lg font-semibold text-gray-800">진행 중</h2>
-        <span className="ml-auto bg-blue-50 text-blue-600 text-xs font-medium px-2.5 py-1 rounded-full">
-          {sessions.length}개 활성
-        </span>
+        <span className="ml-auto text-xs text-gray-400">{programs.length}개 프로그램</span>
       </div>
 
       <div className="divide-y divide-gray-50">
         {loading ? (
           <div className="px-6 py-8 text-center text-gray-400 text-sm">불러오는 중...</div>
-        ) : sessions.length === 0 ? (
-          <div className="px-6 py-8 text-center">
-            <CheckCircle className="w-8 h-8 text-gray-200 mx-auto mb-2" />
-            <p className="text-gray-400 text-sm">현재 사용 중인 프로그램이 없습니다</p>
-          </div>
+        ) : programs.length === 0 ? (
+          <div className="px-6 py-8 text-center text-gray-400 text-sm">등록된 프로그램이 없습니다</div>
         ) : (
-          sessions.map((s) => {
-            const remaining = getRemainingMinutes(s.end_time)
-            const isUrgent = remaining <= 10
+          programs.map((p) => {
+            const active = getActiveSession(p.id)
+            const remaining = active ? getRemainingMinutes(active.end_time) : null
             return (
-              <div key={s.id} className="px-6 py-4 flex items-center gap-4">
+              <div key={p.id} className="px-5 py-3.5 flex items-center gap-3">
+                <ProgramIcon websiteUrl={p.website_url} name={p.name} size={32} />
                 <div className="flex-1 min-w-0">
-                  <p className="font-medium text-gray-800 truncate">{s.programs?.name}</p>
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className="flex items-center gap-1 text-xs text-gray-500">
-                      <User className="w-3 h-3" />
-                      {s.user_name}
-                    </span>
-                    <span className="flex items-center gap-1 text-xs text-gray-500">
-                      <Clock className="w-3 h-3" />
-                      {formatTime(s.start_time)} ~ {formatTime(s.end_time)}
-                    </span>
-                  </div>
+                  <p className="font-medium text-sm text-gray-800 truncate">{p.name}</p>
+                  {active ? (
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {active.user_name} · {formatTime(active.start_time)}~{formatTime(active.end_time)}
+                    </p>
+                  ) : (
+                    <p className="text-xs text-gray-400 mt-0.5">사용 가능</p>
+                  )}
                 </div>
-                <div className={`text-right shrink-0`}>
-                  <span
-                    className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
-                      isUrgent
-                        ? 'bg-red-50 text-red-600'
-                        : 'bg-green-50 text-green-600'
-                    }`}
-                  >
-                    {remaining}분 남음
-                  </span>
+                <div className="shrink-0 flex items-center gap-1.5">
+                  {active ? (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                      <span className="text-xs font-medium text-red-600">{remaining}분 남음</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="w-2 h-2 rounded-full bg-green-500" />
+                      <span className="text-xs font-medium text-green-600">사용 가능</span>
+                    </>
+                  )}
                 </div>
               </div>
             )
