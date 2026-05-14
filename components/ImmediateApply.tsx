@@ -4,9 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Program, Session } from '@/lib/types'
 import { addHours } from 'date-fns'
-import { Zap } from 'lucide-react'
 import AccountPopup from './AccountPopup'
-import ProgramIcon from './ProgramIcon'
 
 export default function ImmediateApply() {
   const [programs, setPrograms] = useState<Program[]>([])
@@ -31,7 +29,7 @@ export default function ImmediateApply() {
   useEffect(() => {
     fetchData()
     const channel = supabase
-      .channel('immediate-v2')
+      .channel('immediate-v3')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, fetchData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'programs' }, fetchData)
       .subscribe()
@@ -45,107 +43,82 @@ export default function ImmediateApply() {
     e.preventDefault()
     if (!userName.trim() || !selectedProgram) return
     if (isOccupied) { setError('현재 사용 중인 프로그램입니다.'); return }
-
     setSubmitting(true)
     setError('')
     const now = new Date()
-    const endTime = addHours(now, Number(hours))
-
     const { error: err } = await supabase.from('sessions').insert({
       program_id: selectedProgram,
       user_name: userName.trim(),
       start_time: now.toISOString(),
-      end_time: endTime.toISOString(),
+      end_time: addHours(now, Number(hours)).toISOString(),
       status: 'active',
     })
-
     setSubmitting(false)
     if (err) { setError('신청 중 오류가 발생했습니다.'); return }
-
     if (selectedProgramData?.account_id && selectedProgramData?.account_pw) {
-      setPopup({
-        accountId: selectedProgramData.account_id,
-        accountPw: selectedProgramData.account_pw,
-        programName: selectedProgramData.name,
-      })
+      setPopup({ accountId: selectedProgramData.account_id, accountPw: selectedProgramData.account_pw, programName: selectedProgramData.name })
     }
-    setUserName('')
-    setSelectedProgram('')
-    setHours('1')
+    setUserName(''); setSelectedProgram(''); setHours('1')
     fetchData()
   }
 
-  const hourOptions = Array.from({ length: 8 }, (_, i) => i + 1)
-
   return (
     <>
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-2">
-          <Zap className="w-5 h-5 text-yellow-500" />
-          <h2 className="text-lg font-semibold text-gray-800">바로 사용 신청</h2>
+      <div className="border border-gray-200 rounded-lg overflow-hidden">
+        <div className="px-5 py-3 border-b border-gray-200">
+          <span className="text-sm font-semibold text-black">바로 사용 신청</span>
         </div>
 
-        <form onSubmit={handleApply} className="px-6 py-5 space-y-3">
-          {/* 프로그램 선택 */}
+        <form onSubmit={handleApply} className="px-5 py-4 space-y-3">
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5">프로그램</label>
+            <label className="block text-xs text-gray-500 mb-1">프로그램</label>
             <div className="relative">
               <select
                 value={selectedProgram}
                 onChange={(e) => { setSelectedProgram(e.target.value); setError('') }}
-                className="w-full appearance-none px-4 py-2.5 pr-10 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
+                className="w-full appearance-none px-3 py-2 pr-8 border border-gray-200 rounded-md text-sm bg-white focus:outline-none focus:border-black"
               >
-                <option value="">프로그램 선택</option>
+                <option value="">선택하세요</option>
                 {programs.map((p) => {
                   const busy = activeSessions.some((s) => s.program_id === p.id)
-                  return (
-                    <option key={p.id} value={p.id}>
-                      {p.name}{busy ? ' (사용 중)' : ' (사용 가능)'}
-                    </option>
-                  )
+                  return <option key={p.id} value={p.id}>{p.name}{busy ? ' (사용 중)' : ''}</option>
                 })}
               </select>
-              {selectedProgramData && (
-                <div className="absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
-                </div>
-              )}
-              <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">▾</div>
+              <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs">▾</div>
             </div>
             {selectedProgram && (
-              <div className={`mt-1.5 flex items-center gap-1.5 text-xs font-medium ${isOccupied ? 'text-red-500' : 'text-green-600'}`}>
+              <p className={`mt-1 text-xs flex items-center gap-1 ${isOccupied ? 'text-red-500' : 'text-green-600'}`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${isOccupied ? 'bg-red-500' : 'bg-green-500'}`} />
                 {isOccupied ? '현재 사용 중' : '사용 가능'}
-              </div>
+              </p>
             )}
           </div>
 
-          {/* 이용 시간 */}
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5">이용 시간</label>
+            <label className="block text-xs text-gray-500 mb-1">이용 시간</label>
             <div className="relative">
               <select
                 value={hours}
                 onChange={(e) => setHours(e.target.value)}
-                className="w-full appearance-none px-4 py-2.5 pr-10 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
+                className="w-full appearance-none px-3 py-2 pr-8 border border-gray-200 rounded-md text-sm bg-white focus:outline-none focus:border-black"
               >
-                {hourOptions.map((h) => (
+                {Array.from({ length: 8 }, (_, i) => i + 1).map((h) => (
                   <option key={h} value={h}>{h}시간</option>
                 ))}
               </select>
-              <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">▾</div>
+              <div className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs">▾</div>
             </div>
           </div>
 
-          {/* 이름 */}
           <div>
-            <label className="block text-xs font-semibold text-gray-500 mb-1.5">이름</label>
+            <label className="block text-xs text-gray-500 mb-1">이름</label>
             <input
               type="text"
               placeholder="이름 입력"
               value={userName}
               onChange={(e) => setUserName(e.target.value)}
-              className="w-full px-4 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-yellow-400 focus:border-transparent"
               maxLength={20}
+              className="w-full px-3 py-2 border border-gray-200 rounded-md text-sm focus:outline-none focus:border-black"
             />
           </div>
 
@@ -154,7 +127,7 @@ export default function ImmediateApply() {
           <button
             type="submit"
             disabled={submitting || !userName.trim() || !selectedProgram || isOccupied}
-            className="w-full py-2.5 bg-yellow-400 hover:bg-yellow-500 disabled:bg-gray-200 disabled:text-gray-400 text-gray-900 text-sm font-bold rounded-xl transition-colors"
+            className="w-full py-2 bg-black hover:bg-gray-800 disabled:bg-gray-200 disabled:text-gray-400 text-white text-sm font-medium rounded-md transition-colors"
           >
             {submitting ? '신청 중...' : '바로 사용하기'}
           </button>
