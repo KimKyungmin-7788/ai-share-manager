@@ -82,23 +82,6 @@ export default function ActiveSessions() {
           <div className="px-5 py-10 text-sm text-gray-400 text-center">등록된 프로그램이 없습니다</div>
         ) : (
           <div className="p-4 grid grid-cols-2 gap-3">
-            {/* Coming Soon 카드 */}
-            <button
-              onClick={() => setShowRequestModal(true)}
-              className="rounded-2xl border-2 border-dashed border-gray-200 hover:border-gray-400 bg-white active:scale-[0.98] transition-all px-4 py-4 flex flex-col gap-3 text-left w-full"
-            >
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-gray-50 border border-dashed border-gray-300 flex items-center justify-center shrink-0">
-                  <Plus className="w-4 h-4 text-gray-400" />
-                </div>
-                <span className="text-sm font-bold text-gray-400 leading-tight">AI 카드 생성 예정</span>
-              </div>
-              <div className="space-y-1 pl-0.5">
-                <p className="text-xs font-bold text-gray-300 uppercase tracking-widest">Coming Soon</p>
-                <p className="text-xs font-semibold text-gray-500 underline underline-offset-2">AI 신청하기 →</p>
-              </div>
-            </button>
-
             {programs.map(p => {
               const active = getActiveSession(p.id)
               const reservedCount = getReservedCount(p.id)
@@ -140,6 +123,18 @@ export default function ActiveSessions() {
                 </button>
               )
             })}
+
+            {/* Coming Soon 카드 — 마지막 배치 */}
+            <button
+              onClick={() => setShowRequestModal(true)}
+              className="rounded-2xl border-2 border-dashed border-gray-200 hover:border-gray-400 bg-white active:scale-[0.98] transition-all flex flex-col items-center justify-center gap-2 py-6 w-full"
+            >
+              <div className="w-10 h-10 rounded-xl bg-gray-50 border border-dashed border-gray-300 flex items-center justify-center">
+                <Plus className="w-5 h-5 text-gray-400" />
+              </div>
+              <p className="text-xs font-bold text-gray-300 uppercase tracking-widest">Coming Soon</p>
+              <p className="text-xs font-semibold text-gray-500 underline underline-offset-2">AI 신청하기</p>
+            </button>
           </div>
         )}
       </div>
