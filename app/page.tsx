@@ -37,7 +37,7 @@ export default function Home() {
             duration={0.04}
             delay={0.06}
             textClassName="text-base text-gray-800"
-            underlineGradient="from-gray-400 via-gray-500 to-gray-600"
+            underlineGradient="from-red-500 via-orange-400 to-yellow-400"
             underlineHeight="h-[2px]"
             underlineOffset="-bottom-1.5"
           />

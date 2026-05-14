@@ -68,6 +68,7 @@ export default function ActiveSessions() {
         <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-base font-bold text-black">현재 상태</span>
+            <span className="w-2 h-2 rounded-full bg-red-500" style={{ animation: 'pulse 2.4s ease-in-out infinite' }} />
             <span className="text-xs text-gray-400 font-medium tracking-wider uppercase">Live</span>
           </div>
           <span className="text-xs text-gray-400 tabular-nums">
