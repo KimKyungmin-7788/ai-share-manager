@@ -10,38 +10,42 @@ import ApplyModal from './ApplyModal'
 import RequestProgramModal from './RequestProgramModal'
 import { Plus } from 'lucide-react'
 
-// 키워드마다 고정 색상 (동일 키워드 = 동일 색상)
-const BADGE_COLORS = [
-  { bg: 'bg-red-100',    text: 'text-red-600'    },
-  { bg: 'bg-orange-100', text: 'text-orange-600'  },
-  { bg: 'bg-amber-100',  text: 'text-amber-700'   },
-  { bg: 'bg-green-100',  text: 'text-green-700'   },
-  { bg: 'bg-teal-100',   text: 'text-teal-700'    },
-  { bg: 'bg-blue-100',   text: 'text-blue-700'    },
-  { bg: 'bg-indigo-100', text: 'text-indigo-700'  },
-  { bg: 'bg-purple-100', text: 'text-purple-700'  },
-  { bg: 'bg-pink-100',   text: 'text-pink-700'    },
-  { bg: 'bg-cyan-100',   text: 'text-cyan-700'    },
+// 키워드마다 고정 색상 (동일 키워드 = 동일 색상) — 인라인 스타일로 purge 방지
+const BADGE_PALETTE = [
+  { background: '#fee2e2', color: '#dc2626' }, // red
+  { background: '#ffedd5', color: '#c2410c' }, // orange
+  { background: '#fef9c3', color: '#a16207' }, // yellow
+  { background: '#dcfce7', color: '#15803d' }, // green
+  { background: '#ccfbf1', color: '#0f766e' }, // teal
+  { background: '#dbeafe', color: '#1d4ed8' }, // blue
+  { background: '#e0e7ff', color: '#4338ca' }, // indigo
+  { background: '#f3e8ff', color: '#7c3aed' }, // purple
+  { background: '#fce7f3', color: '#be185d' }, // pink
+  { background: '#cffafe', color: '#0e7490' }, // cyan
 ]
 
-function getBadgeColor(keyword: string) {
+function getBadgeStyle(keyword: string) {
   let hash = 0
   for (let i = 0; i < keyword.length; i++) {
     hash = keyword.charCodeAt(i) + ((hash << 5) - hash)
   }
-  return BADGE_COLORS[Math.abs(hash) % BADGE_COLORS.length]
+  return BADGE_PALETTE[Math.abs(hash) % BADGE_PALETTE.length]
 }
 
 function CategoryBadges({ category }: { category: string | null }) {
-  if (!category) return null
+  if (!category?.trim()) return null
   const keywords = category.split(',').map(k => k.trim()).filter(Boolean)
   if (keywords.length === 0) return null
   return (
     <div className="flex flex-wrap gap-1">
       {keywords.map((k) => {
-        const color = getBadgeColor(k)
+        const style = getBadgeStyle(k)
         return (
-          <span key={k} className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md leading-none ${color.bg} ${color.text}`}>
+          <span
+            key={k}
+            style={{ backgroundColor: style.background, color: style.color }}
+            className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md leading-none"
+          >
             {k}
           </span>
         )
