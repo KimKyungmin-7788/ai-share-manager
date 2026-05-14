@@ -100,15 +100,12 @@ export default function ActiveSessions() {
                     <span className="text-sm font-bold text-black leading-tight truncate">{p.name}</span>
                   </div>
 
-                  {/* 상태 */}
+                  {/* 상태 — 항상 한 줄 */}
                   {active ? (
-                    <div className="space-y-0.5">
-                      <div className="flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
-                        <span className="text-xs font-semibold text-red-600">사용 중</span>
-                      </div>
-                      <p className="text-xs text-gray-600 font-medium pl-3.5">{active.user_name}</p>
-                      <p className="text-xs text-gray-400 pl-3.5">{remaining}분 후 종료</p>
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
+                      <span className="text-xs font-semibold text-red-600 shrink-0">사용 중</span>
+                      <span className="text-xs text-gray-400 truncate">· {active.user_name} ({remaining}분)</span>
                     </div>
                   ) : reservedCount > 0 ? (
                     <div className="flex items-center gap-1.5">
@@ -125,16 +122,18 @@ export default function ActiveSessions() {
               )
             })}
 
-            {/* Coming Soon 카드 — 마지막 배치 */}
+            {/* Coming Soon 카드 — 프로그램 카드와 동일한 구조/크기 */}
             <button
               onClick={() => setShowRequestModal(true)}
-              className="rounded-2xl border-2 border-dashed border-gray-200 hover:border-gray-400 bg-white active:scale-[0.98] transition-all flex flex-col items-center justify-center gap-2 py-6 w-full"
+              className="rounded-2xl border-2 border-dashed border-gray-200 hover:border-gray-400 bg-white active:scale-[0.98] transition-all px-4 py-4 flex flex-col gap-3 items-center justify-center w-full"
             >
-              <div className="w-10 h-10 rounded-xl bg-gray-50 border border-dashed border-gray-300 flex items-center justify-center">
-                <Plus className="w-5 h-5 text-gray-400" />
+              <div className="w-8 h-8 rounded-xl bg-gray-50 border border-dashed border-gray-300 flex items-center justify-center">
+                <Plus className="w-4 h-4 text-gray-400" />
               </div>
-              <p className="text-xs font-bold text-gray-300 uppercase tracking-widest">Coming Soon</p>
-              <p className="text-xs font-semibold text-gray-500 underline underline-offset-2">AI 신청하기</p>
+              <div className="flex flex-col items-center gap-0.5">
+                <p className="text-xs font-bold text-gray-300 uppercase tracking-widest">Coming Soon</p>
+                <p className="text-xs font-semibold text-gray-500 underline underline-offset-2">AI 신청하기</p>
+              </div>
             </button>
           </div>
         )}
