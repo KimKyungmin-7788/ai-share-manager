@@ -23,14 +23,14 @@ export default function Home() {
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto px-4 pt-4 pb-5 space-y-3">
+      <main className="max-w-lg mx-auto px-4 pt-6 pb-10 space-y-5">
         {/* 히어로 */}
-        <div className="px-1">
+        <div className="px-1 py-2">
           <AnimatedText
             text="원하는 AI 카드를 눌러주세요."
             duration={0.04}
             delay={0.06}
-            textClassName="text-base text-gray-800"
+            textClassName="text-lg text-gray-800"
             underlineGradient="from-red-500 via-orange-400 to-yellow-400"
             underlineHeight="h-[2px]"
             underlineOffset="-bottom-1.5"

@@ -110,7 +110,7 @@ export default function ActiveSessions() {
     <>
       <div className="rounded-2xl border border-gray-100 overflow-hidden bg-white">
         {/* 헤더 */}
-        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between" style={{ paddingTop: '18px', paddingBottom: '18px' }}>
           <div className="flex items-center gap-2">
             <span className="text-base font-bold text-black">현재 상태</span>
             <span className="w-2 h-2 rounded-full bg-red-500" style={{ animation: 'pulse 2.4s ease-in-out infinite' }} />
@@ -127,7 +127,7 @@ export default function ActiveSessions() {
         ) : programs.length === 0 ? (
           <div className="px-5 py-10 text-sm text-gray-400 text-center">등록된 프로그램이 없습니다</div>
         ) : (
-          <div className="p-4 grid grid-cols-2 gap-3">
+          <div className="p-4 grid grid-cols-2 gap-4">
             {programs.map(p => {
               const active = getActiveSession(p.id)
               const reservedCount = getReservedCount(p.id)
@@ -137,7 +137,7 @@ export default function ActiveSessions() {
                 <button
                   key={p.id}
                   onClick={() => setSelectedProgram(p)}
-                  className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md active:scale-[0.98] transition-all px-4 py-4 flex flex-col gap-3 text-left w-full"
+                  className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md active:scale-[0.98] transition-all px-4 py-5 flex flex-col gap-3 text-left w-full"
                 >
                   {/* 아이콘 + 이름 + 카테고리 */}
                   <div className="flex items-center gap-2.5">
@@ -175,7 +175,7 @@ export default function ActiveSessions() {
             {/* Coming Soon 카드 — 프로그램 카드와 동일한 구조/크기 */}
             <button
               onClick={() => setShowRequestModal(true)}
-              className="rounded-2xl border-2 border-dashed border-gray-200 hover:border-gray-400 bg-white active:scale-[0.98] transition-all px-4 py-4 flex flex-col gap-3 items-center justify-center w-full"
+              className="rounded-2xl border-2 border-dashed border-gray-200 hover:border-gray-400 bg-white active:scale-[0.98] transition-all px-4 py-5 flex flex-col gap-3 items-center justify-center w-full"
             >
               <div className="w-8 h-8 rounded-xl bg-gray-50 border border-dashed border-gray-300 flex items-center justify-center">
                 <Plus className="w-4 h-4 text-gray-400" />
