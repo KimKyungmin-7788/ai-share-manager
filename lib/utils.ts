@@ -1,10 +1,4 @@
-import { type ClassValue, clsx } from 'clsx'
-import { twMerge } from 'tailwind-merge'
 import { format, addHours, startOfHour, isBefore, isAfter } from 'date-fns'
-
-export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
-}
 import { ko } from 'date-fns/locale'
 
 export function formatTime(dateStr: string) {
