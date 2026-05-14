@@ -12,7 +12,7 @@ export default function Home() {
             <div className="w-8 h-8 bg-gray-100 rounded-xl flex items-center justify-center text-base shrink-0">
               🤖
             </div>
-            <h1 className="text-sm font-bold text-black">공용 AI 사용 신청</h1>
+            <h1 className="text-base font-bold text-black">공용 AI 사용 신청</h1>
           </div>
           <div className="flex items-center gap-1">
             <NotificationBell />
