@@ -10,6 +10,46 @@ import ApplyModal from './ApplyModal'
 import RequestProgramModal from './RequestProgramModal'
 import { Plus } from 'lucide-react'
 
+// 키워드마다 고정 색상 (동일 키워드 = 동일 색상)
+const BADGE_COLORS = [
+  { bg: 'bg-red-100',    text: 'text-red-600'    },
+  { bg: 'bg-orange-100', text: 'text-orange-600'  },
+  { bg: 'bg-amber-100',  text: 'text-amber-700'   },
+  { bg: 'bg-green-100',  text: 'text-green-700'   },
+  { bg: 'bg-teal-100',   text: 'text-teal-700'    },
+  { bg: 'bg-blue-100',   text: 'text-blue-700'    },
+  { bg: 'bg-indigo-100', text: 'text-indigo-700'  },
+  { bg: 'bg-purple-100', text: 'text-purple-700'  },
+  { bg: 'bg-pink-100',   text: 'text-pink-700'    },
+  { bg: 'bg-cyan-100',   text: 'text-cyan-700'    },
+]
+
+function getBadgeColor(keyword: string) {
+  let hash = 0
+  for (let i = 0; i < keyword.length; i++) {
+    hash = keyword.charCodeAt(i) + ((hash << 5) - hash)
+  }
+  return BADGE_COLORS[Math.abs(hash) % BADGE_COLORS.length]
+}
+
+function CategoryBadges({ category }: { category: string | null }) {
+  if (!category) return null
+  const keywords = category.split(',').map(k => k.trim()).filter(Boolean)
+  if (keywords.length === 0) return null
+  return (
+    <div className="flex flex-wrap gap-1">
+      {keywords.map((k) => {
+        const color = getBadgeColor(k)
+        return (
+          <span key={k} className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-md leading-none ${color.bg} ${color.text}`}>
+            {k}
+          </span>
+        )
+      })}
+    </div>
+  )
+}
+
 export default function ActiveSessions() {
   const [programs, setPrograms] = useState<Program[]>([])
   const [sessions, setSessions] = useState<Session[]>([])
@@ -99,11 +139,7 @@ export default function ActiveSessions() {
                     <ProgramIcon websiteUrl={p.website_url} name={p.name} size={32} />
                     <div className="min-w-0 flex-1 flex flex-col gap-1">
                       <span className="text-sm font-bold text-black leading-tight truncate">{p.name}</span>
-                      {p.category && (
-                        <span className="inline-block w-fit text-[10px] font-semibold bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-md leading-none">
-                          {p.category}
-                        </span>
-                      )}
+                      <CategoryBadges category={p.category} />
                     </div>
                   </div>
 
