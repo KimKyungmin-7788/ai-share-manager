@@ -1,3 +1,4 @@
+// v2
 import ActiveSessions from '@/components/ActiveSessions'
 import ImmediateApply from '@/components/ImmediateApply'
 import ReservationApply from '@/components/ReservationApply'
