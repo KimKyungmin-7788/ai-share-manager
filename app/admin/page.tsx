@@ -14,6 +14,7 @@ const ADMIN_PASSWORD = process.env.NEXT_PUBLIC_ADMIN_PASSWORD || 'admin1234'
 type EditState = {
   name: string
   description: string
+  category: string
   website_url: string
   account_id: string
   account_pw: string
@@ -29,6 +30,7 @@ export default function AdminPage() {
   const [sessions, setSessions] = useState<Session[]>([])
   const [newProgramName, setNewProgramName] = useState('')
   const [newProgramDesc, setNewProgramDesc] = useState('')
+  const [newProgramCategory, setNewProgramCategory] = useState('')
   const [newWebsiteUrl, setNewWebsiteUrl] = useState('')
   const [newAccountId, setNewAccountId] = useState('')
   const [newAccountPw, setNewAccountPw] = useState('')
@@ -37,7 +39,7 @@ export default function AdminPage() {
   const [requests, setRequests] = useState<ProgramRequest[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editState, setEditState] = useState<EditState>({ name: '', description: '', website_url: '', account_id: '', account_pw: '' })
+  const [editState, setEditState] = useState<EditState>({ name: '', description: '', category: '', website_url: '', account_id: '', account_pw: '' })
   const [saving, setSaving] = useState(false)
 
   function handleLogin(e: React.FormEvent) {
@@ -77,11 +79,12 @@ export default function AdminPage() {
     await supabase.from('programs').insert({
       name: newProgramName.trim(),
       description: newProgramDesc.trim() || null,
+      category: newProgramCategory.trim() || null,
       website_url: newWebsiteUrl.trim() || null,
       account_id: newAccountId.trim() || null,
       account_pw: newAccountPw.trim() || null,
     })
-    setNewProgramName(''); setNewProgramDesc(''); setNewWebsiteUrl(''); setNewAccountId(''); setNewAccountPw('')
+    setNewProgramName(''); setNewProgramDesc(''); setNewProgramCategory(''); setNewWebsiteUrl(''); setNewAccountId(''); setNewAccountPw('')
     setCreating(false)
     fetchData()
   }
@@ -91,6 +94,7 @@ export default function AdminPage() {
     setEditState({
       name: p.name,
       description: p.description || '',
+      category: p.category || '',
       website_url: p.website_url || '',
       account_id: p.account_id || '',
       account_pw: p.account_pw || '',
@@ -103,6 +107,7 @@ export default function AdminPage() {
     await supabase.from('programs').update({
       name: editState.name.trim(),
       description: editState.description.trim() || null,
+      category: editState.category.trim() || null,
       website_url: editState.website_url.trim() || null,
       account_id: editState.account_id.trim() || null,
       account_pw: editState.account_pw.trim() || null,
@@ -206,6 +211,8 @@ export default function AdminPage() {
                     className="px-3 py-2 border border-gray-200 rounded text-sm focus:outline-none focus:border-black" />
                   <input type="text" placeholder="웹사이트 URL (아이콘 자동)" value={newWebsiteUrl} onChange={(e) => setNewWebsiteUrl(e.target.value)}
                     className="px-3 py-2 border border-gray-200 rounded text-sm focus:outline-none focus:border-black" />
+                  <input type="text" placeholder="카테고리 (예: LLM, PPT, 음악, 웹툰)" value={newProgramCategory} onChange={(e) => setNewProgramCategory(e.target.value)}
+                    className="px-3 py-2 border border-gray-200 rounded text-sm focus:outline-none focus:border-black" />
                   <input type="text" placeholder="공유 계정 ID" value={newAccountId} onChange={(e) => setNewAccountId(e.target.value)}
                     className="px-3 py-2 border border-gray-200 rounded text-sm focus:outline-none focus:border-black" />
                   <input type="text" placeholder="공유 계정 PW" value={newAccountPw} onChange={(e) => setNewAccountPw(e.target.value)}
@@ -237,6 +244,7 @@ export default function AdminPage() {
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                             <input value={editState.name} onChange={(e) => setEditState({ ...editState, name: e.target.value })} placeholder="프로그램 이름 *" className={inputCls} />
                             <input value={editState.website_url} onChange={(e) => setEditState({ ...editState, website_url: e.target.value })} placeholder="웹사이트 URL" className={inputCls} />
+                            <input value={editState.category} onChange={(e) => setEditState({ ...editState, category: e.target.value })} placeholder="카테고리 (예: LLM, PPT)" className={inputCls} />
                             <input value={editState.account_id} onChange={(e) => setEditState({ ...editState, account_id: e.target.value })} placeholder="공유 계정 ID" className={inputCls} />
                             <input value={editState.account_pw} onChange={(e) => setEditState({ ...editState, account_pw: e.target.value })} placeholder="공유 계정 PW" className={inputCls} />
                           </div>

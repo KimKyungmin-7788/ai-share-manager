@@ -94,10 +94,17 @@ export default function ActiveSessions() {
                   onClick={() => setSelectedProgram(p)}
                   className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md active:scale-[0.98] transition-all px-4 py-4 flex flex-col gap-3 text-left w-full"
                 >
-                  {/* 아이콘 + 이름 */}
+                  {/* 아이콘 + 이름 + 카테고리 */}
                   <div className="flex items-center gap-2.5">
                     <ProgramIcon websiteUrl={p.website_url} name={p.name} size={32} />
-                    <span className="text-sm font-bold text-black leading-tight truncate">{p.name}</span>
+                    <div className="min-w-0 flex-1 flex flex-col gap-1">
+                      <span className="text-sm font-bold text-black leading-tight truncate">{p.name}</span>
+                      {p.category && (
+                        <span className="inline-block w-fit text-[10px] font-semibold bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded-md leading-none">
+                          {p.category}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   {/* 상태 */}
