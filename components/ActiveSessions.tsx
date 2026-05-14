@@ -6,18 +6,20 @@ import { Program, Session } from '@/lib/types'
 import { format } from 'date-fns'
 import { ko } from 'date-fns/locale'
 import ProgramIcon from './ProgramIcon'
+import ApplyModal from './ApplyModal'
 
 export default function ActiveSessions() {
   const [programs, setPrograms] = useState<Program[]>([])
   const [sessions, setSessions] = useState<Session[]>([])
   const [loading, setLoading] = useState(true)
   const [now, setNow] = useState(new Date())
+  const [selectedProgram, setSelectedProgram] = useState<Program | null>(null)
 
   async function fetchData() {
     const nowIso = new Date().toISOString()
     const [{ data: progs }, { data: sess }] = await Promise.all([
       supabase.from('programs').select('*').eq('is_active', true).order('name'),
-      supabase.from('sessions').select('*').eq('status', 'active').gte('end_time', nowIso),
+      supabase.from('sessions').select('*').in('status', ['active', 'reserved']).gte('end_time', nowIso),
     ])
     setPrograms(progs || [])
     setSessions(sess || [])
@@ -33,7 +35,7 @@ export default function ActiveSessions() {
     fetchData()
     expireSessions()
     const channel = supabase
-      .channel('active-v4')
+      .channel('active-v5')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sessions' }, () => { fetchData(); expireSessions() })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'programs' }, fetchData)
       .subscribe()
@@ -43,61 +45,92 @@ export default function ActiveSessions() {
   }, [])
 
   function getActiveSession(programId: string) {
-    return sessions.find((s) => s.program_id === programId) || null
+    return sessions.find(s => s.program_id === programId && s.status === 'active') || null
+  }
+
+  function getReservedCount(programId: string) {
+    return sessions.filter(s => s.program_id === programId && s.status === 'reserved').length
   }
 
   function getRemainingMinutes(endTime: string) {
     return Math.max(0, Math.floor((new Date(endTime).getTime() - now.getTime()) / 60000))
   }
 
-  return (
-    <div className="border border-gray-200 rounded-lg overflow-hidden">
-      {/* 헤더 - 한 줄 */}
-      <div className="px-5 py-3.5 border-b border-gray-200 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <span className="text-sm font-bold text-black">현재 상태</span>
-          <span className="text-xs font-semibold tracking-widest text-gray-400 uppercase">Live Status</span>
-        </div>
-        <span className="text-xs text-gray-400 tabular-nums">
-          {format(now, 'yyyy년 M월 d일 (EEE) HH:mm:ss', { locale: ko })}
-        </span>
-      </div>
+  const selectedActiveSession = selectedProgram ? getActiveSession(selectedProgram.id) : null
 
-      {/* 프로그램 카드 그리드 */}
-      {loading ? (
-        <div className="px-5 py-6 text-sm text-gray-400 text-center">불러오는 중...</div>
-      ) : programs.length === 0 ? (
-        <div className="px-5 py-6 text-sm text-gray-400 text-center">등록된 프로그램이 없습니다</div>
-      ) : (
-        <div className="p-4 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3">
-          {programs.map((p) => {
-            const active = getActiveSession(p.id)
-            const remaining = active ? getRemainingMinutes(active.end_time) : null
-            return (
-              <div
-                key={p.id}
-                className="bg-white rounded-xl border border-gray-100 shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:shadow-[0_4px_16px_rgba(0,0,0,0.12)] transition-shadow px-3 py-3 flex flex-col gap-2"
-              >
-                <div className="flex items-center gap-2">
-                  <ProgramIcon websiteUrl={p.website_url} name={p.name} size={22} />
-                  <span className="text-xs font-semibold text-black truncate leading-tight">{p.name}</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className={`w-2 h-2 rounded-full shrink-0 ${active ? 'bg-red-500 animate-pulse' : 'bg-green-500'}`} />
+  return (
+    <>
+      <div className="rounded-2xl border border-gray-100 overflow-hidden bg-white">
+        {/* 헤더 */}
+        <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-base font-bold text-black">현재 상태</span>
+            <span className="text-xs text-gray-400 font-medium tracking-wider uppercase">Live</span>
+          </div>
+          <span className="text-xs text-gray-400 tabular-nums">
+            {format(now, 'M월 d일 (EEE) HH:mm:ss', { locale: ko })}
+          </span>
+        </div>
+
+        {/* 카드 그리드 */}
+        {loading ? (
+          <div className="px-5 py-10 text-sm text-gray-400 text-center">불러오는 중...</div>
+        ) : programs.length === 0 ? (
+          <div className="px-5 py-10 text-sm text-gray-400 text-center">등록된 프로그램이 없습니다</div>
+        ) : (
+          <div className="p-4 grid grid-cols-2 gap-3">
+            {programs.map(p => {
+              const active = getActiveSession(p.id)
+              const reservedCount = getReservedCount(p.id)
+              const remaining = active ? getRemainingMinutes(active.end_time) : null
+
+              return (
+                <button
+                  key={p.id}
+                  onClick={() => setSelectedProgram(p)}
+                  className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md active:scale-[0.98] transition-all px-4 py-4 flex flex-col gap-3 text-left w-full"
+                >
+                  {/* 아이콘 + 이름 */}
+                  <div className="flex items-center gap-2.5">
+                    <ProgramIcon websiteUrl={p.website_url} name={p.name} size={32} />
+                    <span className="text-sm font-bold text-black leading-tight truncate">{p.name}</span>
+                  </div>
+
+                  {/* 상태 */}
                   {active ? (
-                    <div className="flex flex-col">
-                      <span className="text-xs font-medium text-gray-700 leading-tight">{active.user_name}</span>
-                      <span className="text-xs text-gray-400 leading-tight">{remaining}분 남음</span>
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
+                        <span className="text-xs font-semibold text-red-600">사용 중</span>
+                      </div>
+                      <p className="text-xs text-gray-600 font-medium pl-3.5">{active.user_name}</p>
+                      <p className="text-xs text-gray-400 pl-3.5">{remaining}분 후 종료</p>
+                    </div>
+                  ) : reservedCount > 0 ? (
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-yellow-400 shrink-0" />
+                      <span className="text-xs font-semibold text-yellow-600">사용 예약 {reservedCount}건</span>
                     </div>
                   ) : (
-                    <span className="text-xs text-gray-400">사용 가능</span>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
+                      <span className="text-xs font-semibold text-green-600">바로 사용 가능</span>
+                    </div>
                   )}
-                </div>
-              </div>
-            )
-          })}
-        </div>
+                </button>
+              )
+            })}
+          </div>
+        )}
+      </div>
+
+      {selectedProgram && (
+        <ApplyModal
+          program={selectedProgram}
+          activeSession={selectedActiveSession}
+          onClose={() => { setSelectedProgram(null); fetchData() }}
+        />
       )}
-    </div>
+    </>
   )
 }
