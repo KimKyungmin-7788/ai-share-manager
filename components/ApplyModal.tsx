@@ -24,7 +24,7 @@ export default function ApplyModal({ program, activeSession, onClose }: Props) {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
   const [reservedSessions, setReservedSessions] = useState<Session[]>([])
-  const [popup, setPopup] = useState<{ accountId: string; accountPw: string; programName: string } | null>(null)
+  const [popup, setPopup] = useState<{ accountId: string; accountPw: string; programName: string; websiteUrl?: string | null } | null>(null)
   const [isClosing, setIsClosing] = useState(false)
 
   const today = format(new Date(), 'yyyy-MM-dd')
@@ -74,7 +74,7 @@ export default function ApplyModal({ program, activeSession, onClose }: Props) {
     setSubmitting(false)
     if (err) { setError('신청 중 오류가 발생했습니다.'); return }
     if (program.account_id && program.account_pw) {
-      setPopup({ accountId: program.account_id, accountPw: program.account_pw, programName: program.name })
+      setPopup({ accountId: program.account_id, accountPw: program.account_pw, programName: program.name, websiteUrl: program.website_url })
     } else {
       close()
     }
@@ -118,6 +118,7 @@ export default function ApplyModal({ program, activeSession, onClose }: Props) {
         accountId={popup.accountId}
         accountPw={popup.accountPw}
         programName={popup.programName}
+        websiteUrl={popup.websiteUrl}
         onClose={close}
       />
     )
