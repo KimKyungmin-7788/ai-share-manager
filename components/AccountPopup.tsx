@@ -1,6 +1,6 @@
 'use client'
 
-import { X, Copy, Check, AlertTriangle, ExternalLink } from 'lucide-react'
+import { X, Copy, Check, AlertTriangle, ExternalLink, BookmarkCheck } from 'lucide-react'
 import { useState } from 'react'
 
 type Props = {
@@ -8,10 +8,11 @@ type Props = {
   accountPw: string
   programName: string
   websiteUrl?: string | null
+  isReservation?: boolean
   onClose: () => void
 }
 
-export default function AccountPopup({ accountId, accountPw, programName, websiteUrl, onClose }: Props) {
+export default function AccountPopup({ accountId, accountPw, programName, websiteUrl, isReservation, onClose }: Props) {
   const [copiedId, setCopiedId] = useState(false)
   const [copiedPw, setCopiedPw] = useState(false)
 
@@ -53,9 +54,19 @@ export default function AccountPopup({ accountId, accountPw, programName, websit
             <span className="font-semibold text-black">{programName}</span> 공유 계정으로 구글 로그인 후 이용해주세요.
           </p>
 
-          {/* ID / PW 카드 — 강조 */}
+          {/* 예약 시 기록 강조 배너 */}
+          {isReservation && (
+            <div className="bg-blue-50 border border-blue-200 rounded-2xl px-4 py-3 flex gap-2">
+              <BookmarkCheck className="w-4 h-4 text-blue-500 shrink-0 mt-0.5" />
+              <p className="text-xs text-blue-700 leading-relaxed font-medium">
+                예약 시간에 접속할 때 필요합니다.<br />
+                <span className="font-bold">반드시 지금 기록해두세요!</span>
+              </p>
+            </div>
+          )}
+
+          {/* ID / PW 카드 */}
           <div className="rounded-2xl border-2 border-black bg-gray-50 overflow-hidden">
-            {/* 지금 복사 강조 배너 */}
             <div className="bg-black px-4 py-2 flex items-center gap-1.5">
               <Copy className="w-3.5 h-3.5 text-white" />
               <p className="text-xs font-bold text-white tracking-wide">지금 바로 복사하세요!</p>
@@ -71,8 +82,8 @@ export default function AccountPopup({ accountId, accountPw, programName, websit
                   </p>
                   <button
                     onClick={() => copy(accountId, 'id')}
-                    className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                      copiedId ? 'bg-green-500 text-white' : 'bg-black text-white hover:bg-gray-800 active:scale-95'
+                    className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                      copiedId ? 'bg-green-500 text-white' : 'bg-black text-white hover:bg-gray-800'
                     }`}
                   >
                     {copiedId ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
@@ -92,8 +103,8 @@ export default function AccountPopup({ accountId, accountPw, programName, websit
                   </p>
                   <button
                     onClick={() => copy(accountPw, 'pw')}
-                    className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                      copiedPw ? 'bg-green-500 text-white' : 'bg-black text-white hover:bg-gray-800 active:scale-95'
+                    className={`shrink-0 flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold transition-all active:scale-95 ${
+                      copiedPw ? 'bg-green-500 text-white' : 'bg-black text-white hover:bg-gray-800'
                     }`}
                   >
                     {copiedPw ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5" />}
