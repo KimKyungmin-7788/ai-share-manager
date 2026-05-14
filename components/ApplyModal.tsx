@@ -6,6 +6,9 @@ import { Program, Session } from '@/lib/types'
 import { addHours, format, isBefore } from 'date-fns'
 import { X, Zap, CalendarClock, Check } from 'lucide-react'
 import AccountPopup from './AccountPopup'
+import { Calendar } from './ui/calendar-rac'
+import { today as todayDate, getLocalTimeZone } from '@internationalized/date'
+import type { DateValue } from 'react-aria-components'
 
 type Props = {
   program: Program
@@ -20,6 +23,7 @@ export default function ApplyModal({ program, activeSession, onClose }: Props) {
   const [userName, setUserName] = useState('')
   const [hours, setHours] = useState('1')
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'))
+  const [calendarDate, setCalendarDate] = useState<DateValue>(todayDate(getLocalTimeZone()))
   const [startHour, setStartHour] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState('')
@@ -255,13 +259,17 @@ export default function ApplyModal({ program, activeSession, onClose }: Props) {
             <div className="space-y-4 pt-1">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">날짜</label>
-                <input
-                  type="date"
-                  value={selectedDate}
-                  min={today}
-                  onChange={e => { setSelectedDate(e.target.value); setStartHour('') }}
-                  className="w-full px-4 py-3.5 border border-gray-200 rounded-2xl text-base bg-white focus:outline-none focus:border-black transition-colors"
-                />
+                <div className="border border-gray-200 rounded-2xl px-3 py-2">
+                  <Calendar
+                    value={calendarDate}
+                    minValue={todayDate(getLocalTimeZone())}
+                    onChange={(val: DateValue) => {
+                      setCalendarDate(val)
+                      setSelectedDate(val.toString())
+                      setStartHour('')
+                    }}
+                  />
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">시작 시간</label>

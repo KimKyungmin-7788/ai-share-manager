@@ -100,12 +100,14 @@ export default function ActiveSessions() {
                     <span className="text-sm font-bold text-black leading-tight truncate">{p.name}</span>
                   </div>
 
-                  {/* 상태 — 항상 한 줄 */}
+                  {/* 상태 */}
                   {active ? (
-                    <div className="flex items-center gap-1.5 min-w-0">
-                      <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
-                      <span className="text-xs font-semibold text-red-600 shrink-0">사용 중</span>
-                      <span className="text-xs text-gray-400 truncate">· {active.user_name} ({remaining}분)</span>
+                    <div className="space-y-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
+                        <span className="text-xs font-semibold text-red-600">사용 중</span>
+                      </div>
+                      <p className="text-xs text-gray-500 pl-3.5 truncate">{active.user_name} ({remaining}분)</p>
                     </div>
                   ) : reservedCount > 0 ? (
                     <div className="flex items-center gap-1.5">
