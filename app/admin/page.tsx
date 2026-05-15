@@ -5,7 +5,7 @@ import { supabase } from '@/lib/supabase'
 import { Program, Session } from '@/lib/types'
 import { formatDateTime } from '@/lib/utils'
 import Link from 'next/link'
-import { Pencil, Trash2, ArrowLeft, Eye, EyeOff, Check, X, Bell } from 'lucide-react'
+import { Pencil, Trash2, ArrowLeft, Eye, EyeOff, Check, X, Bell, ChevronUp, ChevronDown } from 'lucide-react'
 import ProgramIcon from '@/components/ProgramIcon'
 import { ProgramRequest } from '@/lib/types'
 
@@ -76,6 +76,7 @@ export default function AdminPage() {
     e.preventDefault()
     if (!newProgramName.trim()) return
     setCreating(true)
+    const maxOrder = programs.length > 0 ? Math.max(...programs.map(p => p.sort_order ?? 0)) : 0
     await supabase.from('programs').insert({
       name: newProgramName.trim(),
       description: newProgramDesc.trim() || null,
@@ -83,6 +84,7 @@ export default function AdminPage() {
       website_url: newWebsiteUrl.trim() || null,
       account_id: newAccountId.trim() || null,
       account_pw: newAccountPw.trim() || null,
+      sort_order: maxOrder + 1,
     })
     setNewProgramName(''); setNewProgramDesc(''); setNewProgramCategory(''); setNewWebsiteUrl(''); setNewAccountId(''); setNewAccountPw('')
     setCreating(false)
@@ -135,6 +137,21 @@ export default function AdminPage() {
 
   async function forceEndSession(id: string) {
     await supabase.from('sessions').update({ status: 'completed' }).eq('id', id)
+    fetchData()
+  }
+
+  async function moveProgram(index: number, direction: 'up' | 'down') {
+    const sorted = [...programs].sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999))
+    const swapIndex = direction === 'up' ? index - 1 : index + 1
+    if (swapIndex < 0 || swapIndex >= sorted.length) return
+    const a = sorted[index]
+    const b = sorted[swapIndex]
+    const aOrder = a.sort_order ?? index + 1
+    const bOrder = b.sort_order ?? swapIndex + 1
+    await Promise.all([
+      supabase.from('programs').update({ sort_order: bOrder }).eq('id', a.id),
+      supabase.from('programs').update({ sort_order: aOrder }).eq('id', b.id),
+    ])
     fetchData()
   }
 
@@ -241,7 +258,7 @@ export default function AdminPage() {
                 {programs.length === 0 ? (
                   <p className="px-5 py-8 text-gray-400 text-sm text-center">등록된 프로그램이 없습니다</p>
                 ) : (
-                  programs.map((p) => (
+                  [...programs].sort((a, b) => (a.sort_order ?? 999) - (b.sort_order ?? 999)).map((p, idx, arr) => (
                     <div key={p.id}>
                       {editingId === p.id ? (
                         /* 수정 폼 */
@@ -268,6 +285,23 @@ export default function AdminPage() {
                       ) : (
                         /* 목록 행 */
                         <div className="px-5 py-3.5 flex items-center gap-3">
+                          {/* 순서 변경 버튼 */}
+                          <div className="flex flex-col gap-0.5 shrink-0">
+                            <button
+                              onClick={() => moveProgram(idx, 'up')}
+                              disabled={idx === 0}
+                              className="p-0.5 text-gray-300 hover:text-gray-600 disabled:opacity-20 disabled:cursor-not-allowed transition-colors rounded"
+                            >
+                              <ChevronUp className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => moveProgram(idx, 'down')}
+                              disabled={idx === arr.length - 1}
+                              className="p-0.5 text-gray-300 hover:text-gray-600 disabled:opacity-20 disabled:cursor-not-allowed transition-colors rounded"
+                            >
+                              <ChevronDown className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                           <ProgramIcon websiteUrl={p.website_url} name={p.name} size={28} />
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium text-black">{p.name}</p>

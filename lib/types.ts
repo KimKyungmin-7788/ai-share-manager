@@ -7,6 +7,7 @@ export type Program = {
   website_url: string | null
   account_id: string | null
   account_pw: string | null
+  sort_order: number | null
   created_at: string
 }
 

@@ -66,7 +66,7 @@ export default function ActiveSessions() {
   async function fetchData() {
     const nowIso = new Date().toISOString()
     const [{ data: progs }, { data: sess }] = await Promise.all([
-      supabase.from('programs').select('*').eq('is_active', true).order('name'),
+      supabase.from('programs').select('*').eq('is_active', true).order('sort_order', { ascending: true, nullsFirst: false }),
       supabase.from('sessions').select('*').in('status', ['active', 'reserved']).gte('end_time', nowIso),
     ])
     setPrograms(progs || [])
