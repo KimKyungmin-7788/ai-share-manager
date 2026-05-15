@@ -137,11 +137,13 @@ export default function ActiveSessions() {
                 <button
                   key={p.id}
                   onClick={() => setSelectedProgram(p)}
-                  className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md active:scale-[0.98] transition-all px-4 py-5 flex flex-col gap-3 text-left w-full"
+                  className="group relative bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-lg hover:-translate-y-1 active:scale-[0.98] active:translate-y-0 transition-all duration-300 px-4 py-5 flex flex-col gap-3 text-left w-full overflow-hidden"
                 >
                   {/* 아이콘 + 이름 + 카테고리 */}
-                  <div className="flex items-center gap-2.5">
-                    <ProgramIcon websiteUrl={p.website_url} name={p.name} size={32} />
+                  <div className="flex items-center gap-2.5 transition-transform duration-300 group-hover:-translate-y-0.5">
+                    <div className="group-hover:animate-pulse">
+                      <ProgramIcon websiteUrl={p.website_url} name={p.name} size={32} />
+                    </div>
                     <div className="min-w-0 flex-1 flex flex-col gap-1">
                       <span className="text-sm font-bold text-black leading-tight truncate">{p.name}</span>
                       <CategoryBadges category={p.category} />
@@ -149,11 +151,14 @@ export default function ActiveSessions() {
                   </div>
 
                   {/* 상태 2줄 */}
-                  <div className="space-y-1">
+                  <div className="space-y-1 transition-transform duration-300 group-hover:-translate-y-0.5">
                     {/* 1줄: 현재 상태 */}
                     {active ? (
                       <div className="flex items-center gap-1.5">
-                        <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />
+                        <span className="relative flex shrink-0 w-1.5 h-1.5">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-50" />
+                          <span className="relative inline-flex rounded-full w-1.5 h-1.5 bg-red-500" />
+                        </span>
                         <span className="text-xs font-medium text-red-600">사용 중 <span className="text-gray-400">({remaining}분)</span></span>
                       </div>
                     ) : (
@@ -172,6 +177,9 @@ export default function ActiveSessions() {
                       <div className="h-4" />
                     )}
                   </div>
+
+                  {/* 호버 시 테두리 등장 */}
+                  <div className="absolute inset-0 rounded-2xl border border-gray-300 opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                 </button>
               )
             })}
