@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { Program, Session } from '@/lib/types'
 import { addHours, format, isBefore } from 'date-fns'
-import { X, Zap, CalendarClock, Check } from 'lucide-react'
+import { X, Zap, CalendarClock, Check, StopCircle } from 'lucide-react'
 import AccountPopup from './AccountPopup'
 import { motion } from 'framer-motion'
 import { Calendar } from './ui/calendar-rac'
@@ -17,10 +17,11 @@ type Props = {
   onClose: () => void
 }
 
-type Step = 'choose' | 'immediate' | 'reservation' | 'done'
+type Step = 'choose' | 'immediate' | 'reservation' | 'terminate' | 'done'
 
 export default function ApplyModal({ program, activeSession, onClose }: Props) {
-  const [step, setStep] = useState<Step>(activeSession ? 'reservation' : 'choose')
+  const [step, setStep] = useState<Step>('choose')
+  const [isTerminate, setIsTerminate] = useState(false)
   const [userName, setUserName] = useState('')
   const [hours, setHours] = useState('1')
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'))
@@ -117,6 +118,24 @@ export default function ApplyModal({ program, activeSession, onClose }: Props) {
     }
   }
 
+  async function handleTerminate() {
+    if (!userName.trim()) return
+    if (userName.trim() !== activeSession?.user_name.trim()) {
+      setError('이름이 일치하지 않습니다. 본인만 종료할 수 있습니다.')
+      return
+    }
+    setSubmitting(true)
+    setError('')
+    const { error: err } = await supabase
+      .from('sessions')
+      .update({ status: 'completed' })
+      .eq('id', activeSession!.id)
+    setSubmitting(false)
+    if (err) { setError('종료 중 오류가 발생했습니다.'); return }
+    setIsTerminate(true)
+    setStep('done')
+  }
+
   if (popup) {
     return (
       <AccountPopup
@@ -152,13 +171,18 @@ export default function ApplyModal({ program, activeSession, onClose }: Props) {
           <div>
             <p className="text-lg font-bold text-black">{program.name}</p>
             {step === 'choose' && (
-              <p className="text-sm text-gray-500 mt-0.5">신청 방식을 선택해주세요</p>
+              <p className="text-sm text-gray-500 mt-0.5">
+                {activeSession ? '현재 사용 중인 프로그램입니다' : '신청 방식을 선택해주세요'}
+              </p>
             )}
             {step === 'immediate' && (
               <p className="text-sm text-gray-500 mt-0.5">지금 바로 사용 신청</p>
             )}
             {step === 'reservation' && (
               <p className="text-sm text-gray-500 mt-0.5">예약 신청</p>
+            )}
+            {step === 'terminate' && (
+              <p className="text-sm text-gray-500 mt-0.5">사용 조기 종료</p>
             )}
           </div>
           <button onClick={close} className="p-2 hover:bg-gray-100 rounded-xl transition-colors mt-0.5">
@@ -183,30 +207,73 @@ export default function ApplyModal({ program, activeSession, onClose }: Props) {
           {/* STEP: 방식 선택 */}
           {step === 'choose' && (
             <div className="space-y-3 pt-1">
-              <button
-                onClick={() => setStep('immediate')}
-                className="w-full flex items-center gap-4 p-4 border-2 border-gray-100 rounded-2xl hover:border-black hover:bg-gray-50 active:bg-gray-100 transition-all text-left"
-              >
-                <div className="w-12 h-12 bg-black rounded-2xl flex items-center justify-center shrink-0">
-                  <Zap className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <p className="text-base font-bold text-black">지금 바로 사용</p>
-                  <p className="text-sm text-gray-500 mt-0.5">즉시 계정을 받아 바로 시작합니다</p>
-                </div>
-              </button>
-              <button
-                onClick={() => setStep('reservation')}
-                className="w-full flex items-center gap-4 p-4 border-2 border-gray-100 rounded-2xl hover:border-black hover:bg-gray-50 active:bg-gray-100 transition-all text-left"
-              >
-                <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center shrink-0">
-                  <CalendarClock className="w-6 h-6 text-gray-600" />
-                </div>
-                <div>
-                  <p className="text-base font-bold text-black">예약하기</p>
-                  <p className="text-sm text-gray-500 mt-0.5">원하는 시간을 미리 예약합니다</p>
-                </div>
-              </button>
+              {activeSession ? (
+                <>
+                  {/* 사용 중 안내 */}
+                  <div className="bg-red-50 border border-red-100 rounded-2xl px-4 py-3">
+                    <div className="flex items-center gap-1.5 mb-0.5">
+                      <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
+                      <p className="text-sm font-semibold text-red-700">
+                        {activeSession.user_name}님 사용 중
+                        <span className="font-normal text-red-500"> (~{format(new Date(activeSession.end_time), 'HH:mm')} 종료)</span>
+                      </p>
+                    </div>
+                  </div>
+                  {/* 종료하기 */}
+                  <button
+                    onClick={() => { setUserName(''); setError(''); setStep('terminate') }}
+                    className="w-full flex items-center gap-4 p-4 border-2 border-red-100 rounded-2xl hover:border-red-400 hover:bg-red-50 active:bg-red-100 transition-all text-left"
+                  >
+                    <div className="w-12 h-12 bg-red-500 rounded-2xl flex items-center justify-center shrink-0">
+                      <StopCircle className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-base font-bold text-black">사용 종료하기</p>
+                      <p className="text-sm text-gray-500 mt-0.5">지금 사용을 일찍 끝냅니다</p>
+                    </div>
+                  </button>
+                  {/* 예약하기 */}
+                  <button
+                    onClick={() => setStep('reservation')}
+                    className="w-full flex items-center gap-4 p-4 border-2 border-gray-100 rounded-2xl hover:border-black hover:bg-gray-50 active:bg-gray-100 transition-all text-left"
+                  >
+                    <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center shrink-0">
+                      <CalendarClock className="w-6 h-6 text-gray-600" />
+                    </div>
+                    <div>
+                      <p className="text-base font-bold text-black">예약하기</p>
+                      <p className="text-sm text-gray-500 mt-0.5">이후 시간으로 미리 예약합니다</p>
+                    </div>
+                  </button>
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={() => setStep('immediate')}
+                    className="w-full flex items-center gap-4 p-4 border-2 border-gray-100 rounded-2xl hover:border-black hover:bg-gray-50 active:bg-gray-100 transition-all text-left"
+                  >
+                    <div className="w-12 h-12 bg-black rounded-2xl flex items-center justify-center shrink-0">
+                      <Zap className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-base font-bold text-black">지금 바로 사용</p>
+                      <p className="text-sm text-gray-500 mt-0.5">즉시 계정을 받아 바로 시작합니다</p>
+                    </div>
+                  </button>
+                  <button
+                    onClick={() => setStep('reservation')}
+                    className="w-full flex items-center gap-4 p-4 border-2 border-gray-100 rounded-2xl hover:border-black hover:bg-gray-50 active:bg-gray-100 transition-all text-left"
+                  >
+                    <div className="w-12 h-12 bg-gray-100 rounded-2xl flex items-center justify-center shrink-0">
+                      <CalendarClock className="w-6 h-6 text-gray-600" />
+                    </div>
+                    <div>
+                      <p className="text-base font-bold text-black">예약하기</p>
+                      <p className="text-sm text-gray-500 mt-0.5">원하는 시간을 미리 예약합니다</p>
+                    </div>
+                  </button>
+                </>
+              )}
             </div>
           )}
 
@@ -333,15 +400,52 @@ export default function ApplyModal({ program, activeSession, onClose }: Props) {
             </div>
           )}
 
+          {/* STEP: 사용 종료 */}
+          {step === 'terminate' && (
+            <div className="space-y-5 pt-1">
+              <div className="bg-red-50 border border-red-100 rounded-2xl px-4 py-3">
+                <p className="text-sm font-semibold text-red-700">
+                  {activeSession?.user_name}님의 사용을 종료합니다
+                </p>
+                <p className="text-sm text-red-500 mt-0.5">본인 확인을 위해 이름을 입력해주세요.</p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">이름 확인</label>
+                <input
+                  type="text"
+                  placeholder="사용 신청 시 입력한 이름"
+                  value={userName}
+                  onChange={e => { setUserName(e.target.value); setError('') }}
+                  maxLength={20}
+                  className="w-full px-4 py-3.5 border border-gray-200 rounded-2xl text-base focus:outline-none focus:border-red-400 transition-colors"
+                />
+              </div>
+              {error && <p className="text-sm text-red-500">{error}</p>}
+              <button
+                onClick={handleTerminate}
+                disabled={submitting || !userName.trim()}
+                className="w-full py-4 bg-red-500 hover:bg-red-600 active:bg-red-700 disabled:bg-gray-200 disabled:text-gray-400 text-white text-base font-bold rounded-2xl transition-colors"
+              >
+                {submitting ? '종료 중...' : '사용 종료하기'}
+              </button>
+            </div>
+          )}
+
           {/* STEP: 완료 */}
           {step === 'done' && (
             <div className="py-6 text-center space-y-4">
-              <div className="w-20 h-20 bg-black rounded-full flex items-center justify-center mx-auto">
+              <div className={`w-20 h-20 rounded-full flex items-center justify-center mx-auto ${isTerminate ? 'bg-red-500' : 'bg-black'}`}>
                 <Check className="w-10 h-10 text-white" />
               </div>
               <div>
-                <p className="text-xl font-bold text-black">예약 완료!</p>
-                <p className="text-sm text-gray-500 mt-1">{program.name} 예약이 접수되었습니다.</p>
+                <p className="text-xl font-bold text-black">
+                  {isTerminate ? '사용 종료 완료!' : '예약 완료!'}
+                </p>
+                <p className="text-sm text-gray-500 mt-1">
+                  {isTerminate
+                    ? '사용이 정상적으로 종료되었습니다.'
+                    : `${program.name} 예약이 접수되었습니다.`}
+                </p>
               </div>
               <button
                 onClick={close}

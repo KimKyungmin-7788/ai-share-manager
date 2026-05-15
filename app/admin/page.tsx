@@ -133,6 +133,11 @@ export default function AdminPage() {
     fetchData()
   }
 
+  async function forceEndSession(id: string) {
+    await supabase.from('sessions').update({ status: 'completed' }).eq('id', id)
+    fetchData()
+  }
+
   const statusLabel: Record<string, string> = { active: '사용 중', reserved: '예약됨', completed: '완료', cancelled: '취소' }
   const inputCls = 'px-3 py-1.5 border border-gray-200 rounded text-sm focus:outline-none focus:border-black'
 
@@ -346,9 +351,14 @@ export default function AdminPage() {
                         <span className="text-xs text-gray-600">{statusLabel[s.status]}</span>
                       </td>
                       <td className="px-5 py-2.5">
-                        {(s.status === 'active' || s.status === 'reserved') && (
-                          <button onClick={() => cancelSession(s.id)} className="text-xs text-red-500 hover:text-red-700">취소</button>
-                        )}
+                        <div className="flex items-center gap-2">
+                          {s.status === 'active' && (
+                            <button onClick={() => forceEndSession(s.id)} className="text-xs text-orange-500 hover:text-orange-700 font-medium">강제종료</button>
+                          )}
+                          {(s.status === 'active' || s.status === 'reserved') && (
+                            <button onClick={() => cancelSession(s.id)} className="text-xs text-red-500 hover:text-red-700">취소</button>
+                          )}
+                        </div>
                       </td>
                     </tr>
                   ))}
