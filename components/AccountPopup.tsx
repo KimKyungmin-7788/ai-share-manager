@@ -1,6 +1,6 @@
 'use client'
 
-import { X, Copy, Check, AlertTriangle, ExternalLink, BookmarkCheck } from 'lucide-react'
+import { X, Copy, Check, AlertTriangle, ExternalLink, BookmarkCheck, StopCircle } from 'lucide-react'
 import { useState } from 'react'
 
 type Props = {
@@ -114,6 +114,17 @@ export default function AccountPopup({ accountId, accountPw, programName, websit
               </div>
             </div>
           </div>
+
+          {/* 조기 종료 안내 — 즉시 사용 시만 */}
+          {!isReservation && (
+            <div className="bg-gray-50 border border-gray-200 rounded-2xl px-4 py-3 flex gap-2">
+              <StopCircle className="w-4 h-4 text-gray-500 shrink-0 mt-0.5" />
+              <p className="text-xs text-gray-600 leading-relaxed">
+                작업이 일찍 끝나면 <span className="font-bold text-black">카드를 눌러 종료</span>해주세요.<br />
+                다음 사람이 바로 사용할 수 있습니다.
+              </p>
+            </div>
+          )}
 
           {/* 주의사항 */}
           <div className="bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3 flex gap-2">

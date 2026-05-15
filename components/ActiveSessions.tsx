@@ -148,26 +148,31 @@ export default function ActiveSessions() {
                     </div>
                   </div>
 
-                  {/* 상태 */}
-                  {active ? (
-                    <div className="space-y-0.5">
+                  {/* 상태 2줄 */}
+                  <div className="space-y-1">
+                    {/* 1줄: 현재 상태 */}
+                    {active ? (
                       <div className="flex items-center gap-1.5">
                         <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shrink-0" />
                         <span className="text-xs font-semibold text-red-600">사용 중</span>
+                        <span className="text-xs text-gray-400">({remaining}분)</span>
                       </div>
-                      <p className="text-xs text-gray-500 pl-3.5 truncate">{active.user_name} ({remaining}분)</p>
-                    </div>
-                  ) : reservedCount > 0 ? (
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-yellow-400 shrink-0" />
-                      <span className="text-xs font-semibold text-yellow-600">사용 예약 {reservedCount}건</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
-                      <span className="text-xs font-semibold text-green-600">바로 사용 가능</span>
-                    </div>
-                  )}
+                    ) : (
+                      <div className="flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-full bg-green-500 shrink-0" />
+                        <span className="text-xs font-semibold text-green-600">바로 사용 가능</span>
+                      </div>
+                    )}
+                    {/* 2줄: 예약 건수 */}
+                    {reservedCount > 0 ? (
+                      <div className="flex items-center gap-1.5 pl-0.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 shrink-0" />
+                        <span className="text-xs text-yellow-600 font-medium">예약내역 {reservedCount}건</span>
+                      </div>
+                    ) : (
+                      <div className="h-4" />
+                    )}
+                  </div>
                 </button>
               )
             })}
